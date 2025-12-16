@@ -2,11 +2,12 @@ import requests
 import chess.pgn
 import io
 
-
 URL = r"https://lichess.org/api/puzzle/daily"
 
-
 def fetch_daily_puzzle() -> dict:
+    '''
+    Returns the lichess daily puzzle in FEN format for the ChessPuzzleEngine()
+    '''
     r = requests.get(URL)
     r.raise_for_status()
     data = r.json()
