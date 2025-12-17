@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.games.games import router as games_router
+from api.games import router as games_router
 
 # --- Create app ---
 app = FastAPI(title="Game Platform API")

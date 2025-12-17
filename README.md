@@ -3,21 +3,22 @@
 Design Diagram:
 ┌──────────────────────────┐
 │        Browser           │
-│  (React + Discord OAuth) │
+│     (React + Vite)       │
 │                          │
 │  ┌──────────────────┐    │
-│  │ Discord OAuth    │◀───┼── User Login
+│  │ Discord Activity │◀───┼── Discord OAuth2
+|  | Launch           |    |
 │  └──────────────────┘    │
 │          │               │
 │          ▼               │
 │  ┌──────────────────┐    │
-│  │ Game View        │    │
+│  │ Game UI          │    │
 │  │ (React)          │    │
 │  └──────────────────┘    │
 │          │               │
 │          ▼               │
 │  ┌──────────────────┐    │
-│  │ API Client       │───┼── Authenticated HTTP Requests (JWT)
+│  │ API Client       │────┼── Authenticated HTTP Requests (session)
 │  └──────────────────┘    │
 └──────────┬───────────────┘
            │
@@ -27,13 +28,13 @@ Design Diagram:
 │   (Backend / API Server) │
 │                          │
 │  ┌──────────────────┐    │
-│  │ Auth Routes      │◀───┼── Discord OAuth
+│  │ Auth Routes      │◀───┼── Discord OAuth2
 │  └──────────────────┘    │
 │          │               │
 │          ▼               │
 │  ┌──────────────────┐    │
 │  │ User Context     │    │
-│  │ (JWT / session)  │    │
+│  │ (session)        │    │
 │  └──────────────────┘    │
 │          │               │
 │          ▼               │
@@ -58,10 +59,8 @@ Design Diagram:
            │
            ▼
 ┌──────────────────────────┐
-│  Discord Bot (Worker)    │
+│  Discord Bot             │
 │                          │
-│  - Polls /api/stats      │
-│    (every 1h)            │
 │  - Posts rankings        │
 │    (every 24h)           │
 │  - Resets stats          │
@@ -90,41 +89,38 @@ project/
 │           └── GameView.jsx    # Generic game renderer
 │
 ├── server/                     # Backend (FastAPI)
-│   ├── app/
-│   │   ├── main.py             # FastAPI app entry point
-│   │   ├── db.py               # DB connection / SQLAlchemy setup
-│   │   ├── models.py           # SQLAlchemy models
-│   │   ├── config.py           # Env variables, secrets
-│   │
-│   │   ├── auth/               # Discord OAuth
-│   │   │   ├── routes.py       # OAuth endpoints
-│   │   │   ├── service.py      # Token validation, JWT creation
-│   │   │   └── schemas.py
-│   │   │
+│   ├── src/
+│   │   ├── main.py             # App entry point
+│   │   ├── config.py           # Game selection and env vars
+│   │   ├── redis.py            # Sessions & leaderboard
+│   │   ├── db.py               # DB conn/SQLAlchemy setup
+|   |   |
+│   │   ├── engines/            # Game engines (hot-swappable)
+│   │   │   ├── base.py         # GameEngine interface
+│   │   │   └── chess_puzzles.py
+│   │   │   └── [other_games].py
+|   |   |
 │   │   ├── api/                # FastAPI routers
-│   │   │   ├── games/          # Game-related endpoints
+│   │   │   ├── games/          # Game logic
 │   │   │   │   ├── routes.py
-│   │   │   │   ├── service.py  # Business logic / GameEngine calls
-│   │   │   │   └── schemas.py  # Pydantic models for request/response
-│   │   │   └── player_stats/   # Player stats API
+│   │   │   │   └── schemas.py  # Pydantic models
+│   │   │   ├── auth/           # Discord OAuth2
+│   │   │   │   ├── routes.py
+│   │   │   │   └── schemas.py
+│   │   │   └── stats/          # Player stats
 │   │   │       ├── routes.py
 │   │   │       └── schemas.py
-│   │   │
-│   │   ├── games/              # Backend game engines (hot-swappable)
-│   │   │   ├── base.py         # GameEngine interface
-│   │   │   └── chess.py        # Chess engine implementation
-│   │   │   └── [other_games].py
-│   │   │
-│   │   └── utils/              # Helper functions
-│   │       └── [e.g., scoring, state validation]
+|   |   |
+│   │   ├── services/           # Backend-only APIs
+│   │   │   ├── sessions.py
+│   │   │   ├── lichess.py
 │   │
-│   └── tests/                  # Backend unit / integration tests
-│       ├── test_games.py
-│       └── test_api.py
+│   └── test/
+│       ├── [tests].py
 │
 ├── bot/                        # Discord bot for leaderboard updates
-│   ├── main.py                 # Polling + posting rankings
-│   └── config.py               # Bot token, channel, schedule settings
+│   ├── main.py                 # Bot entry point
+│   └── config.py               # Token, cmd prefix, etc
 │
 ├── shared/                     # Shared contracts / docs
 │   └── game_contract.md        # Game state/action/schema specification
