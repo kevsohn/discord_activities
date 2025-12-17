@@ -1,4 +1,4 @@
-from .base import GameEngine
+from engines.base import GameEngine
 from typing import Dict, Any, List
 from chess import Board
 
@@ -7,7 +7,7 @@ class ChessPuzzleEngine(GameEngine):
     Chess Puzzle engine using chess.Board.
     Takes in FEN notation to init board, solutions and player moves are in uci.
     """
-    def __init__(self, fen, solution: List[str]):
+    def __init__(self, fen: str, solution: List[str]):
         self.fen = fen
         self.solution = solution
 
