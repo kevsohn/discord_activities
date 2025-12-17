@@ -19,7 +19,7 @@ def fetch_daily_puzzle() -> dict:
     return {
         'fen': fen,
         'solution': data['puzzle']['solution'],
-        'rating': data['puzzle']['rating']
+        #'rating': data['puzzle']['rating']
     }
 
 

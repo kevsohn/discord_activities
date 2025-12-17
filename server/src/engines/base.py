@@ -5,7 +5,7 @@ class GameEngine(ABC):
     '''Interface for hot-swappable games'''
 
     @abstractmethod
-    def init_state(self) -> Dict[str Any]:
+    def init_state(self) -> Dict[str, Any]:
         '''
         Returns game's init state as a JSON-serializable dict
         '''
