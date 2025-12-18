@@ -24,3 +24,4 @@ async def create_session(user_id: str, redis) -> str:
 async def delete_session(session_id: str, redis):
     await redis.delete(f'session:{session_id}')
 
+
