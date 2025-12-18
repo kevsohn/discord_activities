@@ -1,17 +1,20 @@
-import requests
-import chess.pgn
+import httpx
 import io
+import chess.pgn
 
-URL = r"https://lichess.org/api/puzzle/daily"
+from ..config import LICHESS_API_URL
+from .error import error
 
-def fetch_daily_puzzle() -> dict:
+
+async def fetch_daily_puzzle(http: httpx.AsyncClient) -> dict:
     '''
-    Returns the lichess daily puzzle in FEN format for the ChessPuzzleEngine()
+    Returns the lichess daily puzzle in FEN format for ChessPuzzleEngine.
     '''
-    r = requests.get(URL)
-    r.raise_for_status()
+    r = await http.get(f'{LICHESS_API_URL}/puzzle/daily')
+    if r.status_code != 200:
+        raise error(r.status_code, 'Failed to fetch daily chess puzzle')
+
     data = r.json()
-
     pgn = data['game']['pgn']
     init_ply = data['puzzle']['initialPly']
     fen = pgn_to_fen(pgn, init_ply)
@@ -19,7 +22,7 @@ def fetch_daily_puzzle() -> dict:
     return {
         'fen': fen,
         'solution': data['puzzle']['solution'],
-        #'rating': data['puzzle']['rating']
+        'rating': data['puzzle']['rating']
     }
 
 
@@ -32,7 +35,7 @@ def pgn_to_fen(pgn: str, initial_ply: int) -> str:
     board = game.board()
 
     for i, move in enumerate(game.mainline_moves()):
-        if i == initial_ply:
+        if i == initial_ply:  # ply is 0-indexed like i
             break
         board.push(move)
 

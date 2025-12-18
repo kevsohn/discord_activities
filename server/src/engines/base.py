@@ -1,8 +1,17 @@
+'''
+Interface for hot-swappable games
+'''
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
+
 class GameEngine(ABC):
-    '''Interface for hot-swappable games'''
+    async def setup(self, http):
+        '''
+        Optional async setup hook:
+        Use to fetch data and init constructor
+        '''
+        pass
 
     @abstractmethod
     def init_state(self) -> Dict[str, Any]:
@@ -14,7 +23,7 @@ class GameEngine(ABC):
     @abstractmethod
     def update_state(self, state: Dict[str, Any], action: Dict[str, Any]) -> Dict[str, Any]:
         '''
-        Applies a player action to game state
+        Applies a player action to game state.
         Returns state and optional flags:
         {
             "state": {...},
@@ -34,3 +43,8 @@ class GameEngine(ABC):
     def is_won(self, state: Dict[str, Any]) -> bool:
         """Returns True if the player has won"""
         pass
+
+    def get_max_score(self):
+        '''Optional'''
+        pass
+

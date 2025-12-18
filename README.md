@@ -89,43 +89,50 @@ project/
 │           └── GameView.jsx    # Generic game renderer
 │
 ├── server/                     # Backend (FastAPI)
+│   ├── .env
 │   ├── src/
 │   │   ├── main.py             # App entry point
-│   │   ├── config.py           # Game selection and env vars
-│   │   ├── redis.py            # Sessions & leaderboard
+│   │   ├── config.py           # Imported env vars
 │   │   ├── db.py               # DB conn/SQLAlchemy setup
 |   |   |
 │   │   ├── engines/            # Game engines (hot-swappable)
 │   │   │   ├── base.py         # GameEngine interface
-│   │   │   └── chess_puzzles.py
+│   │   │   ├── chess_puzzles.py
 │   │   │   └── [other_games].py
 |   |   |
 │   │   ├── api/                # FastAPI routers
 │   │   │   ├── games/          # Game logic
 │   │   │   │   ├── routes.py
 │   │   │   │   └── schemas.py  # Pydantic models
-│   │   │   ├── auth/           # Discord OAuth2
+│   │   │   ├── auth/           # OAuth2 flow
 │   │   │   │   ├── routes.py
 │   │   │   │   └── schemas.py
-│   │   │   └── stats/          # Player stats
+│   │   │   └── stats/          # Player stats for discord bot
 │   │   │       ├── routes.py
 │   │   │       └── schemas.py
 |   |   |
 │   │   ├── services/           # Backend-only APIs
-│   │   │   ├── sessions.py
-│   │   │   ├── lichess.py
+│   │   │   ├── sessions.py     # Creates/del seshes
+│   │   │   ├── error.py        # Wrapper for HTTPException
+│   │   │   └── lichess.py
+│   │   |
+│   │   ├── deps/               # Dependancies (used by fastAPI w/ Depends)
+│   │       ├── session.py      # Gets any sesh-related data
+│   │       ├── http.py         # Gets app.state.http 
+│   │       └── redis.py        # Gets app.state.redis
 │   │
 │   └── test/
 │       ├── [tests].py
 │
 ├── bot/                        # Discord bot for leaderboard updates
 │   ├── main.py                 # Bot entry point
-│   └── config.py               # Token, cmd prefix, etc
+│   ├── config.py               # Token, cmd prefix
+│   └── cogs/                   
 │
-├── shared/                     # Shared contracts / docs
-│   └── game_contract.md        # Game state/action/schema specification
+├── shared/                     # Shared between front & backend
+│   ├── __init__.py             
+│   └── game_schemas.py         # Game specifications
 │
-├── .env                        # Environment variables (local dev)
 ├── README.md
-└── requirements.txt            # Backend dependencies
+└── requirements.txt
 

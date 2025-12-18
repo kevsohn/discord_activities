@@ -1,29 +1,22 @@
 from os import environ
 from dotenv import load_dotenv
-from engines.chess_puzzles import ChessPuzzleEngine
-from engines.minesweeper import MinesweeperEngine
-from services.lichess import fetch_daily_puzzle
 
-# exports .env vars
-load_dotenv()
+load_dotenv()  # exports .env
 
-# discord
+SESSION_TTL = 3600    # session/redis time-to-live: 1h
+REQUEST_TIMEOUT = 10  # httpx client timeout in secs
+
+DISCORD_API_URL = "https://discord.com/api/v10"
+LICHESS_API_URL = "https://lichess.org/api"
+
+# discord dev stuff
 CLIENT_ID = environ.get('CLIENT_ID')
 CLIENT_SECRET = environ.get('CLIENT_SECRET')
-DISCORD_API_URL = "https://discord.com/api/v10"
+REDIRECT_URI = environ.get('REDIRECT_URI')
 
-REDIS_URL = ''
-DB_URL = ''
+REDIS_HOST = environ.get('REDIS_HOST')
+REDIS_PORT = environ.get('REDIS_PORT')
 
-SESSION_TTL = 60*60*24  # session timeout every 24h
-
-GAMES = {
-    'chess': {
-        'engine': ChessPuzzleEngine,
-        'provider': fetch_daily_puzzle,
-    },
-    'minesweeper': {
-        'engine': MinesweeperEngine,
-        'provider': None,
-    },
-}
+#DB_HOST = environ.get('DB_HOST')
+#DB_PORT = environ.get('DB_HOST')
+#DB_NAME = environ.get('DB_NAME')

@@ -1,21 +1,26 @@
-from redis import redis_client
+'''
+Module for con(de)structing sessions.
+Getting session_ids and user_id is done thru Depends.
+'''
 from secrets import token_urlsafe
-from config import SESSION_TTL
 
-def create_session(user_id: str) -> str:
+from ..config import SESSION_TTL
+from .error import error
+
+
+async def create_session(user_id: str, redis) -> str:
     '''
-    Stores user id in a Redis db and returns session id
+    Stores user in a Redis and returns session id
     '''
     session_id = token_urlsafe(32)
-    redis_client.setex(f'session:{session_id}', SESSION_TTL, user_id)
+    await redis.set(
+        f'session:{session_id}',
+        user_id,  # change to user_info if needed
+        ex=SESSION_TTL
+    )
     return session_id
 
 
-def delete_session(session_id: str):
-    redis_client.delete(f'session:{session_id}')
+async def delete_session(session_id: str, redis):
+    await redis.delete(f'session:{session_id}')
 
-
-def get_user_id(session_id: str) -> str:
-    if not session_id:
-        return None
-    return redis_client.get(f'session:{session_id}')

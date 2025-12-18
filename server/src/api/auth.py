@@ -1,58 +1,65 @@
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
-import requests
-from config import DISCORD_API_URL, CLIENT_ID, CLIENT_SECRET
-from services import sessions
 
-router = APIRouter(prefix="/api")
+from ..config import SESSION_TTL, DISCORD_API_URL, CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
+from ..depends.http import get_http_client
+from ..services.error import error
+from ..services.sessions import create_session#, delete_session
+
+
+router = APIRouter(prefix="/api/auth")
 
 @router.post('/token')
-def exchange_code(code: str) -> str:
+async def exchange_code(code: str, http=Depends(get_http_client)) -> str:
     '''
-    Frontend sends discord code, backend exchanges it for an access token,
-    creates a session id and returns both.
+    Frontend sends Discord OAuth code.
+    Backend:
+    - exchanges code for access token
+    - fetches Discord user
+    - creates Redis session
+    - returns access token
+    - sets HTTP-only session cookie
     '''
-    # access_t is used to auth with Discord SDK in the frontend
-    # still need a session id for internal auth
-    access_t = fetch_access_token(code)
-    user = fetch_discord_user(access_t)
-    session_id = sessions.create_session(user['id'])
+    access_token = await fetch_access_token(code, http)
+    user = await fetch_discord_user(access_token, http)
+    session_id = await create_session(user['id'])
 
-    r = JSONResponse({'access_token': access_t})
+    r = JSONResponse({'access_token': access_token})
     r.set_cookie(
-        'session_id',
-        session_id,
+        key='session_id',
+        value=session_id,
         httponly=True,
-        secure=True,
-        samesite='none'
+        secure=True,          # HTTPS
+        samesite='none',      # req for Activities iframe
+        max_age=SESSION_TTL,  # redis expires at same time
+        path='/'
     )
     return r
 
 
-def fetch_access_token(code: str) -> dict:
-    """
-    Exchanges discord code for discord access token
-    """
-    # redirect_uri needs to match exactly with the dev page one
-    data = {'grant_type': 'authorization_code',
-            'code': code,
-            #'redirect_uri': app.config['REDIR_URI']
+async def fetch_access_token(code: str, http) -> dict:
+    data = {
+        'client_id': CLIENT_ID,
+        'client_secret': CLIENT_SECRET,
+        'grant_type': 'authorization_code',
+        'code': code,
+        'redirect_uri': REDIRECT_URI  # needs to match in disc dev page
     }
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
 
-    r = requests.post(
-            f'{DISCORD_API_URL}/oauth2/token',
-            data = data,
-            headers = headers,
-            auth = (CLIENT_ID, CLIENT_SECRET)
+    r = await request.app.state.http.post(
+        f'{DISCORD_API_URL}/oauth2/token',
+        data = data,
+        headers = headers,
     )
-    r.raise_for_status()
+    if r.status_code != 200:
+        raise error(r.status_code, 'Failed to exchange code')
 
     data = r.json()  # access_t, token_type, expires_in, refresh_t, scope
     return data['access_token']
 
 
-def fetch_discord_user(access_token: str) -> dict:
+async def fetch_discord_user(access_token: str, http) -> dict:
     """
     Returns:
     {
@@ -64,10 +71,13 @@ def fetch_discord_user(access_token: str) -> dict:
     """
     headers = {"Authorization": f"Bearer {access_token}"}
 
-    r = requests.get(f"{DISCORD_API_URL}/users/@me",
-                     headers=headers
+    r = await http.get(
+            f'{DISCORD_API_URL}/users/@me',
+            headers = headers,
     )
-    r.raise_for_status()
+    if r.status_code != 200:
+        raise error(r.status_code, 'Invalid Discord token')
+
     return r.json()
 
 

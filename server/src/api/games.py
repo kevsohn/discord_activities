@@ -1,46 +1,53 @@
 '''
 Game logic interface for the frontend
 '''
-from fastapi import APIRouter, HTTPException
-from config import GAMES
+from fastapi import APIRouter, Depends
 
-# just like Flask Blueprints
+from shared.game_specs import GAMES
+from ..depends.http import get_http_client
+from ..services.error import error
+
+
 router = APIRouter(prefix="/games", tags=["games"])
 
 @router.get("/{game}/start")
-def start_game(game: str) -> dict:
+async def start_game(game: str, http=Depends(get_http_client)) -> dict:
     '''
     Returns the init state for the requested game.
     '''
-    engine = get_engine(game)
+    engine = await select_engine(game, http)
     return engine.init_state()
 
 
 @router.post("/{game}/move")
-def play_move(game: str, payload: dict) -> dict:
+async def play_move(game: str, payload: dict,
+                    http=Depends(get_http_client)) -> dict:
     '''
     Returns the updated state for the requested game.
     '''
-    engine = get_engine(game)
+    engine = await select_engine(game, http)
     return engine.update_state(payload["state"], payload["action"])
 
 
-def get_engine(game: str):
+async def select_engine(game: str, http):
     '''
-    Helper fnc that returns the appropriately init'd game engine.
+    Returns the appropriate game engine.
     '''
     # use .get() to avoid KeyError
-    game_cfg = GAMES.get(game)  # cfg stands for config
+    game_cfg = GAMES.get(game)   # cfg: config
     if not game_cfg:
-        raise HTTPException(404, f"Unknown game: {game}")
+        raise error(404, f"Unknown game: {game}")
 
-    engine_cls = game_cfg['engine']  # cls stands for class
-    data_fn = game_cfg['provider']
+    engine_cls = game_cfg['engine']   # cls: class
+    engine = engine_cls()
 
-    # if this game requires data from an API
-    if data_fn:
-        data = data_fn()
-        return engine_cls(**data)  # constructors can have diff args
+    # not all engines implement setup()
+    # getattr more secure than hastattr() b/c
+    # engine.setup can be dynamically overwritten
+    setup = getattr(engine, 'setup', None)   # equiv to engine.setup
+    if callable(setup):
+        await setup(http)
 
-    return engine_cls()
+    return engine
+
 
