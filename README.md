@@ -63,7 +63,6 @@ Design Diagram:
 │                          │
 │  - Posts rankings        │
 │    (every 24h)           │
-│  - Resets stats          │
 │  - Uses service account  │
 │    (no user OAuth)       │
 └──────────────────────────┘
@@ -116,7 +115,7 @@ project/
 │   │   │   ├── error.py        # Wrapper for HTTPException
 │   │   │   └── lichess.py
 │   │   |
-│   │   ├── deps/               # Dependancies (used by fastAPI w/ Depends)
+│   │   ├── depends/               # Dependancies (used by fastAPI w/ Depends)
 │   │       ├── session.py      # Gets any sesh-related data
 │   │       ├── http.py         # Gets app.state.http 
 │   │       └── redis.py        # Gets app.state.redis
@@ -124,14 +123,9 @@ project/
 │   └── test/
 │       ├── [tests].py
 │
-├── bot/                        # Discord bot for leaderboard updates
-│   ├── main.py                 # Bot entry point
-│   ├── config.py               # Token, cmd prefix
-│   └── cogs/                   
-│
 ├── shared/                     # Shared between front & backend
 │   ├── __init__.py             
-│   └── game_schemas.py         # Game specifications
+│   └── game_specs.py           # Game specifications
 │
 ├── README.md
 └── requirements.txt

@@ -1,20 +1,16 @@
 from fastapi import Request, Depends
 
-from ..services.error import error
+from ..services.sessions import SessionManager
 from .redis import get_redis
 
 
-def get_session_id(request: Request) -> str:
-    # cookies are created w/ sessions in api.auth
+def get_session_manager(redis=Depends(get_redis)):
+    return SessionManager(redis)
+
+
+def get_session_id(request: Request):
     session_id = request.cookies.get('session_id')
     if not session_id:
-        raise error(401, "Not authenticated")
+        raise error(401, 'User not authenticated')
     return session_id
 
-
-async def get_user_id(session_id=Depends(get_session_id),
-                      redis=Depends(get_redis)) -> str:
-    user_id = await redis.get(f'session:{session_id}')
-    if not user_id:
-        raise error(401, "Session expired or invalid")
-    return user_id

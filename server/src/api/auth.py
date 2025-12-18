@@ -3,9 +3,8 @@ from fastapi.responses import JSONResponse
 
 from ..config import SESSION_TTL, DISCORD_API_URL, CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 from ..depends.http import get_http_client
-from ..depends.redis import get_redis
+from ..depends.session import get_session_manager
 from ..services.error import error
-from ..services.sessions import create_session#, delete_session
 
 
 router = APIRouter(prefix="/api/auth")
@@ -13,7 +12,7 @@ router = APIRouter(prefix="/api/auth")
 @router.post('/token')
 async def exchange_code(code: str,
                         http=Depends(get_http_client),
-                        redis=Depends(get_redis)) -> str:
+                        session=Depends(get_session_manager)) -> str:
     '''
     Frontend sends Discord OAuth code.
     Backend:
@@ -24,8 +23,8 @@ async def exchange_code(code: str,
     - sets HTTP-only session cookie
     '''
     access_token = await fetch_access_token(code, http)
-    user = await fetch_discord_user(access_token, http)
-    session_id = await create_session(user['id'], redis)
+    user_info = await fetch_discord_user(access_token, http)
+    session_id = await session.create(user_info)
 
     r = JSONResponse({'access_token': access_token})
     r.set_cookie(
@@ -35,7 +34,6 @@ async def exchange_code(code: str,
         secure=True,          # HTTPS
         samesite='none',      # req for Activities iframe
         max_age=SESSION_TTL,  # redis expires at same time
-        path='/'
     )
     return r
 

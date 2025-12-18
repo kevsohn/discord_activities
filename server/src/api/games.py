@@ -3,15 +3,18 @@ Game logic interface for the frontend
 '''
 from fastapi import APIRouter, Depends
 
-from shared.game_specs import GAMES
+from shared.game_specs import SPECS
 from ..depends.http import get_http_client
+from ..depends.session import get_session_id
 from ..services.error import error
 
 
 router = APIRouter(prefix="/games", tags=["games"])
 
 @router.get("/{game}/start")
-async def start_game(game: str, http=Depends(get_http_client)) -> dict:
+async def start_game(game: str,
+                     session_id=Depends(get_session_id),
+                     http=Depends(get_http_client)) -> dict:
     '''
     Returns the init state for the requested game.
     '''
@@ -20,7 +23,9 @@ async def start_game(game: str, http=Depends(get_http_client)) -> dict:
 
 
 @router.post("/{game}/move")
-async def play_move(game: str, payload: dict,
+async def play_move(game: str,
+                    payload: dict,
+                    session_id=Depends(get_session_id),
                     http=Depends(get_http_client)) -> dict:
     '''
     Returns the updated state for the requested game.
@@ -34,7 +39,7 @@ async def select_engine(game: str, http):
     Returns the appropriate game engine.
     '''
     # use .get() to avoid KeyError
-    game_cfg = GAMES.get(game)   # cfg: config
+    game_cfg = SPECS.get(game)   # cfg: config
     if not game_cfg:
         raise error(404, f"Unknown game: {game}")
 
@@ -49,5 +54,4 @@ async def select_engine(game: str, http):
         await setup(http)
 
     return engine
-
 
