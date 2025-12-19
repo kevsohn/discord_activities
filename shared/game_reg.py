@@ -9,11 +9,10 @@ When adding a new game, you MUST:
 1) Register game name here
 2) Add a GameEngine child in server/src/engines/
    to define game logic
-3) Register game specs in server/src/depends/engine_registry.py
-   following the outlined schema using the same game name and
-   engine name
-4) Add any provider modules (ex: if game calls an ext API to init)
-   in server/src/services/
+3) Register game specs in server/src/depends/engine_reg.py
+   following the outlined schema
+4) Add any provider modules (i.e. Ext API calls for init data)
+   in server/src/providers/
 '''
 
 GAMES = [
