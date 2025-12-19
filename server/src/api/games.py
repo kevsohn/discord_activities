@@ -3,55 +3,50 @@ Game logic interface for the frontend
 '''
 from fastapi import APIRouter, Depends
 
-from shared.game_specs import SPECS
-from ..depends.http import get_http_client
-from ..depends.session import get_session_id
-from ..services.error import error
+from ..depends.session import get_session_id, get_session_manager
+from ..depends.engine_reg import get_game_engine
+from ..depends.game_state import get_state_cache
 
 
 router = APIRouter(prefix="/games", tags=["games"])
 
-@router.get("/{game}/start")
-async def start_game(game: str,
-                     session_id=Depends(get_session_id),
-                     http=Depends(get_http_client)) -> dict:
+# session_id gated
+@router.get("/{game_id}/start")
+async def start_game(game_id: str,
+                     session_id = Depends(get_session_id),
+                     session = Depends(get_session_manager),
+                     engine = Depends(get_game_engine),
+                     state_cache = Depends(get_state_cache)) -> dict:
     '''
     Returns the init state for the requested game.
     '''
-    engine = await select_engine(game, http)
-    return engine.init_state()
+    # key must match fetch_user_info() in api/auth.py
+    user_id = session.get(session_id)['id']  # want KeyError
+
+    reset = await engine.ensure_daily_reset()
+    if reset:
+        state = engine.get_init_state()
+        await state_cache.store(user_id, game_id, state)
+        return state
+
+    return await state_cache.get(user_id, game_id)
 
 
-@router.post("/{game}/move")
-async def play_move(game: str,
+# session_id gated
+@router.post("/{game_id}/move")
+async def play_move(game_id: str,
                     payload: dict,
-                    session_id=Depends(get_session_id),
-                    http=Depends(get_http_client)) -> dict:
+                    session_id = Depends(get_session_id),
+                    session = Depends(get_session_manager),
+                    engine = Depends(get_game_engine),
+                    state_cache = Depends(get_state_cache)) -> dict:
     '''
     Returns the updated state for the requested game.
     '''
-    engine = await select_engine(game, http)
-    return engine.update_state(payload["state"], payload["action"])
+    user_id = session.get(session_id)['id']
+    state = engine.update_state(payload["state"], payload["action"])
+    await state_cache.store(user_id, game_id, state)
 
+    return state
 
-async def select_engine(game: str, http):
-    '''
-    Returns the appropriate game engine.
-    '''
-    # use .get() to avoid KeyError
-    game_cfg = SPECS.get(game)   # cfg: config
-    if not game_cfg:
-        raise error(404, f"Unknown game: {game}")
-
-    engine_cls = game_cfg['engine']   # cls: class
-    engine = engine_cls()
-
-    # not all engines implement setup()
-    # getattr more secure than hastattr() b/c
-    # engine.setup can be dynamically overwritten
-    setup = getattr(engine, 'setup', None)   # equiv to engine.setup
-    if callable(setup):
-        await setup(http)
-
-    return engine
 

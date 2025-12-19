@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
+from secrets import token_urlsafe
 
 from ..config import SESSION_TTL, DISCORD_API_URL, CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 from ..depends.http import get_http_client
@@ -14,17 +15,19 @@ async def exchange_code(code: str,
                         http=Depends(get_http_client),
                         session=Depends(get_session_manager)) -> str:
     '''
-    Frontend sends Discord OAuth code.
+    Frontend sends Discord OAuth2 code.
     Backend:
-    - exchanges code for access token
-    - fetches Discord user
-    - creates Redis session
-    - returns access token
-    - sets HTTP-only session cookie
+     - exchanges code for access token
+     - fetches Discord user
+     - stores session in Redis
+     - sets HTTP-only session cookie
+     - returns access token
     '''
     access_token = await fetch_access_token(code, http)
-    user_info = await fetch_discord_user(access_token, http)
-    session_id = await session.create(user_info)
+    user_info = await fetch_user_info(access_token, http)
+
+    session_id = token_urlsafe(32)  # 256-bit entropy
+    await session.store(session_id, user_info)
 
     r = JSONResponse({'access_token': access_token})
     r.set_cookie(
@@ -60,7 +63,7 @@ async def fetch_access_token(code: str, http) -> dict:
     return data['access_token']
 
 
-async def fetch_discord_user(access_token: str, http) -> dict:
+async def fetch_user_info(access_token: str, http) -> dict:
     """
     Returns:
     {

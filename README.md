@@ -90,42 +90,40 @@ project/
 ├── server/                     # Backend (FastAPI)
 │   ├── .env
 │   ├── src/
-│   │   ├── main.py             # App entry point
-│   │   ├── config.py           # Imported env vars
-│   │   ├── db.py               # DB conn/SQLAlchemy setup
+│   │   ├── main.py             # App entry point (redis, db, etc)
+│   │   ├── config.py           # .env vars
+│   │   ├── db.py               # DB conn / SQLAlchemy setup
+|   |   |
+│   │   ├── api/                # FastAPI routers
+│   │   │   ├── games.py        # Game logic
+│   │   │   ├── auth.py         # OAuth2 flow
+│   │   │   └── leaderboard.py  # Player stats for discord bot
 |   |   |
 │   │   ├── engines/            # Game engines (hot-swappable)
 │   │   │   ├── base.py         # GameEngine interface
-│   │   │   ├── chess_puzzles.py
-│   │   │   └── [other_games].py
+│   │   │   ├── chess_puzzle.py
+│   │   │   └── [others].py
 |   |   |
-│   │   ├── api/                # FastAPI routers
-│   │   │   ├── games/          # Game logic
-│   │   │   │   ├── routes.py
-│   │   │   │   └── schemas.py  # Pydantic models
-│   │   │   ├── auth/           # OAuth2 flow
-│   │   │   │   ├── routes.py
-│   │   │   │   └── schemas.py
-│   │   │   └── stats/          # Player stats for discord bot
-│   │   │       ├── routes.py
-│   │   │       └── schemas.py
-|   |   |
-│   │   ├── services/           # Backend-only APIs
-│   │   │   ├── sessions.py     # Creates/del seshes
-│   │   │   ├── error.py        # Wrapper for HTTPException
-│   │   │   └── lichess.py
+│   │   ├── providers/          # Game data providers
+│   │   │   ├── lichess.py
+│   │   │   └── [others].py
 │   │   |
-│   │   ├── depends/               # Dependancies (used by fastAPI w/ Depends)
-│   │       ├── session.py      # Gets any sesh-related data
-│   │       ├── http.py         # Gets app.state.http 
-│   │       └── redis.py        # Gets app.state.redis
+│   │   ├── depends/            # Dependancies (used by fastAPI w/ Depends)
+│   │   |   ├── engine_reg.py   # Engine & provider registry & alloc
+│   │   |   ├── session.py      # SessionManager & ID
+│   │   |   ├── game_state.py   # GameStateCache interface
+│   │   |   ├── http.py         # Gets app.state.http 
+│   │   |   └── redis.py        # Gets app.state.redis
+|   |   |
+│   │   └── services/           # Backend-only APIs
+│   │       ├── reset_time.py   # Returns daily reset time
+│   │       └── error.py        # Wrapper for HTTPException
 │   │
 │   └── test/
-│       ├── [tests].py
 │
 ├── shared/                     # Shared between front & backend
 │   ├── __init__.py             
-│   └── game_specs.py           # Game specifications
+│   └── game_reg.py             # Game registry & specifications
 │
 ├── README.md
 └── requirements.txt

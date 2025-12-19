@@ -2,49 +2,49 @@
 Interface for hot-swappable games
 '''
 from abc import ABC, abstractmethod
-from typing import Any, Dict
 
 
 class GameEngine(ABC):
-    async def setup(self, http):
+    '''
+    GameEngine follows the Singleton pattern and is user-state agonstic.
+    User states are stored in GameStateCache.
+    Class only holds session-wide truths like reset_time.
+    '''
+    @abstractmethod
+    async def ensure_daily_reset(self) -> bool:
         '''
-        Optional async setup hook:
-        Use to fetch data and init constructor
+        Inits state at reset time every 24h.
+        Returns True if it reseted.
+
+        Some games fetch init data here using
+        fetcher = lambda: provider(http_client).
         '''
         pass
 
-    @abstractmethod
-    def init_state(self) -> Dict[str, Any]:
-        '''
-        Returns game's init state as a JSON-serializable dict
-        '''
-        pass
 
     @abstractmethod
-    def update_state(self, state: Dict[str, Any], action: Dict[str, Any]) -> Dict[str, Any]:
+    def get_init_state(self) -> dict:
         '''
-        Applies a player action to game state.
-        Returns state and optional flags:
-        {
-            "state": {...},
+        Returns game's init state as a JSON-serializable dict.
+        state = {
+            "board": list,
             "score": int,
-            "is_gameover: bool",
-            "is_won: bool"
+            "gameover: bool",
+            "won: bool"
         }
         '''
         pass
 
-    @abstractmethod
-    def is_gameover(self, state: Dict[str, Any]) -> bool:
-        """Returns True if game has ended (success or fail)"""
-        pass
 
     @abstractmethod
-    def is_won(self, state: Dict[str, Any]) -> bool:
-        """Returns True if the player has won"""
+    def update_state(self, state: dict, action: dict) -> dict:
+        '''Applies player action and returns updated state.'''
         pass
 
-    def get_max_score(self):
-        '''Optional'''
+
+    @abstractmethod
+    def get_max_score(self) -> int:
+        '''Returns max score for display and ranking purposes'''
         pass
+
 

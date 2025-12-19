@@ -4,7 +4,10 @@ from contextlib import asynccontextmanager
 import httpx
 import redis.asyncio as redis
 
+from shared.game_reg import GAMES
 from server.src.config import REQUEST_TIMEOUT, REDIS_HOST, REDIS_PORT
+from server.src.depends.engine_reg import init_game_engine
+
 from server.src.api.games import router as games_router
 from server.src.api.auth import router as auth_router
 
@@ -20,6 +23,12 @@ async def lifespan(app: FastAPI):
         decode_responses=True,  # retrn strings instead of bytes
     )
     #app.state.db = psycopg2.connect(url=DB_URL)
+
+    app.state.engines = {}
+    for game_id in GAMES:
+        engine = await init_game_engine(game_id, app)
+        app.state.engines[game_id] = engine
+
     '''
     scheduler = AsyncIOScheduler()
     async def check_reset_time():
@@ -31,10 +40,13 @@ async def lifespan(app: FastAPI):
     scheduler.start()
     app.state.scheduler = scheduler
     '''
+
     yield
     print('Server shutting down...')
     await app.state.http.aclose()
     await app.state.redis.close()
+    #await app.state.db.close()
+
 
 # -------------- main -----------------
 app = FastAPI(title="Discord Activities API", lifespan=lifespan)
@@ -51,4 +63,5 @@ app.add_middleware(
 
 app.include_router(games_router)
 app.include_router(auth_router)
+
 
