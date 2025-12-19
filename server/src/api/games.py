@@ -12,11 +12,11 @@ router = APIRouter(prefix="/games", tags=["games"])
 
 # session_id gated
 @router.get("/{game_id}/start")
-async def start_game(game_id: str,
-                     session_id = Depends(get_session_id),
-                     session = Depends(get_session_manager),
-                     engine = Depends(get_game_engine),
-                     state_cache = Depends(get_state_cache)) -> dict:
+async def start(game_id: str,
+                session_id=Depends(get_session_id),
+                session=Depends(get_session_manager),
+                engine=Depends(get_game_engine),
+                state_cache=Depends(get_state_cache)) -> dict:
     '''
     Returns the init state for the requested game.
     '''
@@ -33,13 +33,13 @@ async def start_game(game_id: str,
 
 
 # session_id gated
-@router.post("/{game_id}/move")
-async def play_move(game_id: str,
-                    payload: dict,
-                    session_id = Depends(get_session_id),
-                    session = Depends(get_session_manager),
-                    engine = Depends(get_game_engine),
-                    state_cache = Depends(get_state_cache)) -> dict:
+@router.post("/{game_id}/update")
+async def update(game_id: str,
+                 payload: dict,
+                 session_id=Depends(get_session_id),
+                 session=Depends(get_session_manager),
+                 engine=Depends(get_game_engine),
+                 state_cache=Depends(get_state_cache)) -> dict:
     '''
     Returns the updated state for the requested game.
     '''
