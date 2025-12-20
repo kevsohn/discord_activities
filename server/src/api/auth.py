@@ -4,7 +4,7 @@ from secrets import token_urlsafe
 
 from ..config import SESSION_TTL, DISCORD_API_URL, CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 from ..depends.http import get_http_client
-from ..depends.session import get_session_manager
+from ..depends.sessions import get_session_manager
 from ..services.error import error
 
 
@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/auth")
 @router.post('/token')
 async def exchange_code(code: str,
                         http=Depends(get_http_client),
-                        session=Depends(get_session_manager)) -> str:
+                        sessions=Depends(get_session_manager)) -> str:
     '''
     Frontend sends Discord OAuth2 code.
     Backend:
@@ -27,7 +27,7 @@ async def exchange_code(code: str,
     user_info = await fetch_user_info(access_token, http)
 
     session_id = token_urlsafe(32)  # 256-bit entropy
-    await session.store(session_id, user_info)
+    await sessions.store(session_id, user_info)
 
     r = JSONResponse({'access_token': access_token})
     r.set_cookie(
