@@ -92,7 +92,10 @@ project/
 │   ├── src/
 │   │   ├── main.py             # App entry point (redis, db, etc)
 │   │   ├── config.py           # .env vars
-│   │   ├── db.py               # DB conn / SQLAlchemy setup
+|   |   |
+│   │   ├── db/                 # asyncpg / sqlalchemy
+│   │   │   ├── models/         # Sqlalchemy models
+│   │   │   └── queries/        # SQL
 |   |   |
 │   │   ├── api/                # FastAPI routers
 │   │   │   ├── games.py        # Game logic
@@ -110,8 +113,9 @@ project/
 │   │   |
 │   │   ├── depends/            # Dependancies (used by fastAPI w/ Depends)
 │   │   |   ├── engine_reg.py   # Engine & provider registry & alloc
-│   │   |   ├── session.py      # SessionManager & ID
-│   │   |   ├── game_state.py   # GameStateCache interface
+│   │   |   ├── sessions.py     # SessionManager & ID
+│   │   |   ├── game_states.py  # GameStateCache interface
+│   │   |   ├── db_session.py   # Gets app.state.db_session
 │   │   |   ├── http.py         # Gets app.state.http 
 │   │   |   └── redis.py        # Gets app.state.redis
 |   |   |

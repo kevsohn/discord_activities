@@ -5,9 +5,8 @@ from fastapi import APIRouter, Depends
 
 from ..depends.sessions import get_session_id, get_session_manager
 from ..depends.engine_reg import get_game_engine
-from ..depends.game_states import get_state_cache
-from ..depends.db import get_db
-from ..services.persist import save_score
+from ..depends.game_states import get_state_store
+from ..depends.db_session import get_db_session
 
 
 router = APIRouter(prefix="/games", tags=["games"])
@@ -18,20 +17,20 @@ async def start(game_id: str,
                 session_id=Depends(get_session_id),
                 sessions=Depends(get_session_manager),
                 engine=Depends(get_game_engine),
-                state_cache=Depends(get_state_cache)) -> dict:
+                states=Depends(get_state_store)) -> dict:
     '''
     Returns the init state for the requested game.
     '''
     # key must match fetch_user_info() in api/auth.py
     user_id = sessions.get(session_id)['id']  # want KeyError
+    state = await states.get(user_id, game_id)
 
     reset = await engine.ensure_daily_reset()
-    if reset:
+    if state is None or reset:
         state = engine.get_init_state()
-        await state_cache.store(user_id, game_id, state)
-        return state
-    # get from db?
-    return await state_cache.get(user_id, game_id)
+        await states.store(user_id, game_id, state)
+
+    return state
 
 
 # session_id gated
@@ -41,13 +40,13 @@ async def update(game_id: str,
                  session_id=Depends(get_session_id),
                  sessions=Depends(get_session_manager),
                  engine=Depends(get_game_engine),
-                 state_cache=Depends(get_state_cache)) -> dict:
+                 states=Depends(get_state_store)) -> dict:
     '''
     Returns the updated state for the requested game.
     '''
     user_id = sessions.get(session_id)['id']
     state = engine.update_state(payload["state"], payload["action"])
-    await state_cache.store(user_id, game_id, state)
+    await states.store(user_id, game_id, state)
     return state
 
 
@@ -57,9 +56,8 @@ async def gameover(game_id: str,
                    payload: dict,
                    session_id=Depends(get_session_id),
                    sessions=Depends(get_session_manager),
-                   db=Depends(get_db)):
-    user_id = sessions.get(session_id)['id']
-    score = payload['score']
-    await save_score(db, game_id, user_id, score)
+                   db=Depends(get_db_session)):
+    # do nothing?
+    pass
 
 

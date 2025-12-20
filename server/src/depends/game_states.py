@@ -7,11 +7,11 @@ from ..services.error import error
 from .redis import get_redis
 
 
-def get_state_cache(redis=Depends(get_redis)):
-    return GameStateCache(redis)
+def get_state_store(redis=Depends(get_redis)):
+    return GameStateStore(redis)
 
 
-class GameStateCache:
+class GameStateStore:
     def __init__(self, redis: Redis):
         self.redis = redis
 
