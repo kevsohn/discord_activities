@@ -33,10 +33,11 @@ async def start(game_id: str,
 
     is_reset = await engine.ensure_reset(epoch)
     if state is None or is_reset:
-        state = engine.get_init_state()
+        # order matters in case user plays close to reset
+        # want state to timeout first
         ttl = seconds_til_next_reset()
+        state = engine.get_init_state()
         await states.store(game_id, user_id, epoch, state, ttl)
-
     return state
 
 
@@ -55,11 +56,18 @@ async def update(game_id: str,
     if user_id is None:
         raise error(401, 'Session expired')
 
+    # get ttl here to be consistent with current epoch.
+    # otherwise, might store state with next epoch's ttl.
     epoch = get_current_epoch()
-    state = engine.update_state(payload["state"], payload["action"])
     ttl = seconds_til_next_reset()
-    await states.store(game_id, user_id, epoch, state, ttl)
 
+    # in case game resets during play
+    is_reset = await engine.ensure_reset(epoch)
+    if is_reset:
+        raise error(409, 'Game reset, restart required')
+
+    state = engine.update_state(payload["state"], payload["action"])
+    await states.store(game_id, user_id, epoch, state, ttl)
     return state
 
 
