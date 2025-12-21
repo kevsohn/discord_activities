@@ -69,6 +69,10 @@ Design Diagram:
 
 
 project/
+├── shared/                     # Shared between front & backend
+│   ├── __init__.py             
+│   └── game_reg.py             # Game registry & specifications
+|
 ├── client/                     # Frontend (React + Vite)
 │   ├── index.html              # Single HTML entry point
 │   ├── package.json
@@ -90,20 +94,16 @@ project/
 ├── server/                     # Backend (FastAPI)
 │   ├── .env
 │   ├── src/
-│   │   ├── main.py             # App entry point (redis, db, etc)
-│   │   ├── config.py           # .env vars
+│   │   ├── main.py             # App entry point (app.state)
+│   │   ├── config.py
 |   |   |
-│   │   ├── db/                 # asyncpg / sqlalchemy
-│   │   │   ├── models/         # Sqlalchemy models
-│   │   │   └── queries/        # SQL
-|   |   |
-│   │   ├── api/                # FastAPI routers
+│   │   ├── api/                # FastAPI Routers
 │   │   │   ├── games.py        # Game logic
-│   │   │   ├── auth.py         # OAuth2 flow
-│   │   │   └── leaderboard.py  # Player stats for discord bot
+│   │   │   ├── auth.py         # Discord OAuth2 flow
+│   │   │   └── stats.py        # Player stats (for discord bot)
 |   |   |
-│   │   ├── engines/            # Game engines (hot-swappable)
-│   │   │   ├── base.py         # GameEngine interface
+│   │   ├── engines/            # GameEngines (hot-swappable)
+│   │   │   ├── base.py         # abstract class
 │   │   │   ├── chess_puzzle.py
 │   │   │   └── [others].py
 |   |   |
@@ -111,23 +111,25 @@ project/
 │   │   │   ├── lichess.py
 │   │   │   └── [others].py
 │   │   |
-│   │   ├── depends/            # Dependancies (used by fastAPI w/ Depends)
-│   │   |   ├── engine_reg.py   # Engine & provider registry & alloc
-│   │   |   ├── sessions.py     # SessionManager & ID
-│   │   |   ├── game_states.py  # GameStateCache interface
+│   │   ├── depends/            # Dependancies (for fastAPI Depends())
+│   │   |   ├── engine_reg.py   # GameEngine & provider registry + alloc
+│   │   |   ├── game_states.py  # GameStateStore interface
+│   │   |   ├── sessions.py     # SessionManager & session ID
+│   │   |   ├── streak.py       # Daily streak logic  
+│   │   |   ├── leaderboard.py  # Daily rankings logic  
 │   │   |   ├── db_session.py   # Gets app.state.db_session
-│   │   |   ├── http.py         # Gets app.state.http 
-│   │   |   └── redis.py        # Gets app.state.redis
+│   │   |   ├── redis.py        # Gets app.state.redis
+│   │   |   └── http.py         # Gets app.state.http 
 |   |   |
-│   │   └── services/           # Backend-only APIs
-│   │       ├── reset.py        # Redis/game state TTL + game reset
-│   │       └── error.py        # Wrapper for HTTPException
+│   │   ├── services/           # Business-side logic 
+│   │   |   ├── reset.py        # Global reset sync (state TTL, game reset, stats)
+│   │   |   └── error.py        # Wrapper for HTTPException
+|   |   |
+│   │   └── db/                 # asyncpg / sqlalchemy
+│   │       ├── models/         # Alchemy models
+│   │       └── queries/    
 │   │
 │   └── test/
-│
-├── shared/                     # Shared between front & backend
-│   ├── __init__.py             
-│   └── game_reg.py             # Game registry & specifications
 │
 ├── README.md
 └── requirements.txt

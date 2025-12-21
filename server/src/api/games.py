@@ -3,10 +3,11 @@ Game logic interface for the frontend
 '''
 from fastapi import APIRouter, Depends
 
+from ..services.reset import get_current_epoch, seconds_til_next_reset
 from ..depends.sessions import get_session_id, get_session_manager
 from ..depends.engine_reg import get_game_engine
 from ..depends.game_states import get_state_store
-from ..services.reset import get_current_epoch, seconds_til_next_reset
+from ..depends.streak import incr_streak
 
 
 router = APIRouter(prefix="/games", tags=["games"])
@@ -17,7 +18,8 @@ async def start(game_id: str,
                 session_id=Depends(get_session_id),
                 sessions=Depends(get_session_manager),
                 engine=Depends(get_game_engine),
-                states=Depends(get_state_store)) -> dict:
+                states=Depends(get_state_store),
+                _=Depends(incr_streak)) -> dict:
     '''
     Returns the init state for the requested game.
     '''

@@ -53,7 +53,7 @@ class SessionManager:
         if data is None:
             return None
 
-        # sliding expiary
+        # sliding expiary: if exists, extend ttl
         await self.redis.expire(key, self.ttl)
 
         # redis.asyncio returns bytes so decode
