@@ -120,7 +120,7 @@ project/
 │   │   |   └── redis.py        # Gets app.state.redis
 |   |   |
 │   │   └── services/           # Backend-only APIs
-│   │       ├── reset_time.py   # Returns daily reset time
+│   │       ├── reset.py        # Redis/game state TTL + game reset
 │   │       └── error.py        # Wrapper for HTTPException
 │   │
 │   └── test/

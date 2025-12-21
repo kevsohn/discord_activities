@@ -2,19 +2,25 @@
 Interface for hot-swappable games
 '''
 from abc import ABC, abstractmethod
+import asyncio
 
 
 class GameEngine(ABC):
     '''
     GameEngine follows the Singleton pattern and is user-state agonstic.
-    User states are stored in GameStateCache.
-    Class only holds session-wide truths like reset_time.
+    User states are stored in GameStateStore.
+    Class only holds truths shared by all players, like solution.
     '''
+    def __init__(self):
+        self._lock = asyncio.Lock()  # to prevent data races
+        self._epoch : str | None = None
+
+
     @abstractmethod
-    async def ensure_daily_reset(self) -> bool:
+    async def ensure_reset(self, cur_epoch: str) -> bool:
         '''
-        Inits state at reset time every 24h.
-        Returns True if it reseted.
+        Resets game state if self.epoch != cur_epoch.
+        Returns True if it reset.
 
         Some games fetch init data here using
         fetcher = lambda: provider(http_client).

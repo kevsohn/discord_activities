@@ -1,29 +1,37 @@
 '''
 Read engines/base.py for info.
 '''
-from asyncio import Lock
-from datetime import datetime
+import asyncio
 
 from .base import GameEngine
-from ..services.reset_time import next_reset_time
 
 
 class MinesweeperEngine(GameEngine):
     """
     """
     def __init__(self):
-        self._lock = Lock()  # to prevent data races
-        self.reset_time: datetime = datetime.min  # force 1st reset
-        self.ndim = 8
-        self.max_score = 0
+        super().__init__()
+        self.ndim: int = 8
+        self.mines: list | None = None
 
 
-    async def ensure_daily_reset(self) -> bool:
-        async with self._lock:
-            if datetime.utcnow() >= self.reset_time:
-                self.reset_time = next_reset_time()
-                return True
+    async def ensure_reset(self, cur_epoch: str) -> bool:
+        '''
+        Ensures the engine fetches new puzzle after reset time.
+        Returns True if reset.
+        '''
+        # if in the same epoch, do nothing
+        if self._epoch == cur_epoch:
             return False
+
+        async with self._lock:
+            # check again after lock just in case
+            if self._epoch == cur_epoch:
+                return False
+            # else is next epoch so new seed
+            self.mines = self.init_mines()
+            self._epoch = cur_epoch
+            return True
 
 
     def get_init_state(self) -> dict:
@@ -56,7 +64,7 @@ class MinesweeperEngine(GameEngine):
 
 
     def get_max_score(self) -> int:
-        return self.max_score
+        return len(self.mines)
 
 
     def init_mines(self):

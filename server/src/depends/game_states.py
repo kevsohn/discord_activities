@@ -2,8 +2,6 @@ from fastapi import Depends
 import json
 from redis.asyncio import Redis
 
-from ..config import SESSION_TTL
-from ..services.error import error
 from .redis import get_redis
 
 
@@ -16,31 +14,34 @@ class GameStateStore:
         self.redis = redis
 
 
-    def _key(self, user_id: str, game_id: str) -> str:
-        return f'game:{user_id}:{game_id}'
+    def _key(self, game_id: str, user_id: str, epoch: str) -> str:
+        return f'game:{game_id}:{user_id}:{epoch}'
 
 
-    async def store(self, user_id: str, game_id: str,
-                  state: dict,
-                  ttl: int = SESSION_TTL):
+    async def store(self,
+                    game_id: str,
+                    user_id: str,
+                    epoch: str,
+                    state: dict,
+                    ttl: int):
         '''
         Stores the game state in redis.
         state must be JSON-serializable.
         '''
         await self.redis.set(
-                self._key(user_id, game_id),
+                self._key(game_id, user_id, epoch),
                 json.dumps(state),
                 ex=ttl
         )
 
 
-    async def get(self, user_id: str, game_id: str) -> dict:
+    async def get(self, game_id: str, user_id: str, epoch: str) -> dict:
         '''
         Returns game state.
         '''
-        state = await self.redis.get(self._key(user_id, game_id))
+        state = await self.redis.get(self._key(game_id, user_id, epoch))
         if state is None:
-            raise error(404, 'Game not started')
+            return None
 
         # redis.asyncio returns bytes so decode
         if isinstance(state, bytes):
@@ -49,12 +50,12 @@ class GameStateStore:
         return json.loads(state)
 
 
-    async def delete(self, user_id: str, game_id: str) -> bool:
+    async def delete(self, game_id: str, user_id: str, epoch: str) -> bool:
         '''
         Deletes game state from redis.
         Returns True if existed and deleted.
         '''
         # returns nkeys deleted
-        nkeys = await self.redis.delete(self._key(user_id, game_id))
+        nkeys = await self.redis.delete(self._key(game_id, user_id, epoch))
         return nkeys > 0
 

@@ -3,7 +3,6 @@ import json
 from redis.asyncio import Redis
 
 from ..config import SESSION_TTL
-from ..services.error import error
 from .redis import get_redis
 
 
@@ -20,19 +19,26 @@ def get_session_manager(redis=Depends(get_redis)):
 
 class SessionManager:
     '''Redis interface for sessions.'''
-    def __init__(self, redis: Redis):
+    def __init__(self, redis: Redis, ttl=SESSION_TTL):
         self.redis = redis
+        self.ttl = ttl
 
 
     def _key(self, session_id: str) -> str:
         return f'session:{session_id}'
 
 
-    async def create(self, session_id: str, user_data: dict, ttl: int = SESSION_TTL):
+    async def create(self,
+                     session_id: str,
+                     user_data: dict,
+                     ttl: int | None = None):
         '''
-        Creates a new session in redis.
+        Create a new session.
         user_data must be JSON-serializable.
         '''
+        # if ttl is not None, it is truthy so short circuit
+        ttl = ttl or self.ttl
+
         await self.redis.set(
                 self._key(session_id),
                 json.dumps(user_data),
@@ -40,13 +46,15 @@ class SessionManager:
         )
 
 
-    async def get(self, session_id: str) -> dict:
-        '''
-        Returns session data.
-        '''
-        data = await self.redis.get(self._key(session_id))
+    async def get(self, session_id: str) -> dict | None:
+        '''Fetches session and refresh TTL.'''
+        key = self._key(session_id)
+        data = await self.redis.get(key)
         if data is None:
-            raise error(401, 'User not authenticated')
+            return None
+
+        # sliding expiary
+        await self.redis.expire(key, self.ttl)
 
         # redis.asyncio returns bytes so decode
         if isinstance(data, bytes):

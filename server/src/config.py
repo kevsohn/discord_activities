@@ -1,6 +1,11 @@
 from os import environ
 from dotenv import load_dotenv
 
+# adjustable constants
+GAME_RESET_HOUR = 0     # midnight UTC
+SESSION_TTL = 3600*36   # session lifetime in secs
+REQUEST_TIMEOUT = 10    # httpx client timeout in secs
+
 load_dotenv()  # exports .env
 
 # discord dev stuff
@@ -19,5 +24,3 @@ DB_PWD =  environ.get('DB_PWD')
 DB_NAME = environ.get('DB_NAME')
 DB_URL = f'postgresql+asyncpg://{DB_USER}:{DB_PWD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
 
-SESSION_TTL = 3600*24  # session/redis time-to-live: 24h
-REQUEST_TIMEOUT = 10   # httpx client timeout in secs

@@ -1,12 +1,11 @@
 '''
 Read engines/base.py for info.
 '''
-from asyncio import Lock
-from datetime import datetime
+from collections.abc import Callable, Awaitable
+import asyncio
 from chess import Board
 
 from .base import GameEngine
-from ..services.reset_time import next_reset_time
 
 
 class ChessPuzzleEngine(GameEngine):
@@ -14,23 +13,32 @@ class ChessPuzzleEngine(GameEngine):
     Board must be given in FEN.
     Player moves and solutions must be in UCI.
     """
-    def __init__(self, fetcher):  # fetcher = lamba: provider(http)
-        self._fetcher = fetcher
-        self._lock = Lock()       # to prevent data races
-        self.reset_time: datetime = datetime.min  # force 1st reset
+    def __init__(self, fetcher: Callable[[], Awaitable[dict]]):
+        super().__init__()
+        self._fetcher = fetcher   # = lambda: provider(http)
         self.fen: str | None = None
         self.solution: list[str] | None = None
 
 
-    async def ensure_daily_reset(self) -> bool:
-        async with self._lock:
-            if datetime.utcnow() >= self.reset_time:
-                data = await self._fetcher()
-                self.fen = data['fen']
-                self.solution = data['solution']
-                self.reset_time = next_reset_time()
-                return True
+    async def ensure_reset(self, cur_epoch: str) -> bool:
+        '''
+        Ensures the engine fetches new puzzle after reset time.
+        Returns True if reset.
+        '''
+        # if in the same epoch, do nothing
+        if self._epoch == cur_epoch:
             return False
+
+        async with self._lock:
+            # check again after lock just in case
+            if self._epoch == cur_epoch:
+                return False
+            # else now next epoch so fetch new data
+            data = await self._fetcher()
+            self.fen = data['fen']
+            self.solution = data['solution']
+            self._epoch = cur_epoch
+            return True
 
 
     def get_init_state(self) -> dict:

@@ -27,7 +27,7 @@ async def exchange_code(code: str,
     user_info = await fetch_user_info(access_token, http)
 
     session_id = token_urlsafe(32)  # 256-bit entropy
-    await sessions.store(session_id, user_info)
+    await sessions.create(session_id, user_info)
 
     r = JSONResponse({'access_token': access_token})
     r.set_cookie(
@@ -36,7 +36,7 @@ async def exchange_code(code: str,
         httponly=True,
         secure=True,          # HTTPS
         samesite='none',      # req for Activities iframe
-        max_age=SESSION_TTL,  # redis expires at same time
+        max_age=sessions.ttl,
     )
     return r
 
