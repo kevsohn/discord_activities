@@ -3,11 +3,12 @@ Game logic interface for the frontend
 '''
 from fastapi import APIRouter, Depends
 
-from ..services.reset import get_current_epoch, seconds_til_next_reset
 from ..depends.sessions import get_session_id, get_session_manager
 from ..depends.engine_reg import get_game_engine
 from ..depends.game_states import get_state_store
-from ..depends.streak import incr_streak
+from ..depends.streak import mark_played
+from ..services.leaderboard import rank_player
+from ..services.reset import get_current_epoch, seconds_til_next_reset
 
 
 router = APIRouter(prefix="/games", tags=["games"])
@@ -19,7 +20,7 @@ async def start(game_id: str,
                 sessions=Depends(get_session_manager),
                 engine=Depends(get_game_engine),
                 states=Depends(get_state_store),
-                _=Depends(incr_streak)) -> dict:
+                _=Depends(mark_played)) -> dict:
     '''
     Returns the init state for the requested game.
     '''
@@ -56,8 +57,8 @@ async def update(game_id: str,
     if user_id is None:
         raise error(401, 'Session expired')
 
-    # get ttl here to be consistent with current epoch.
-    # otherwise, might store state with next epoch's ttl.
+    # get ttl here so its consistent with current epoch.
+    # otherwise, might store w/ next epoch's ttl.
     epoch = get_current_epoch()
     ttl = seconds_til_next_reset()
 
@@ -68,6 +69,10 @@ async def update(game_id: str,
 
     state = engine.update_state(payload["state"], payload["action"])
     await states.store(game_id, user_id, epoch, state, ttl)
+
+    # live leaderboard update
+    await rank_player(game_id, user_id, epoch, state['score'])
+
     return state
 
 
@@ -75,5 +80,4 @@ async def update(game_id: str,
 @router.post("/{game_id}/gameover")
 async def gameover(session_id=Depends(get_session_id)):
     pass
-
 

@@ -27,24 +27,7 @@ GAME_SPECS = {
 }
 
 
-# called by main.py @asynccontextmanager
-async def init_game_engine(game_id: str, app: FastAPI) -> GameEngine:
-    spec = GAME_SPECS.get(game_id)
-    if not spec:
-        raise error(404, f'Unknown game: {game_id}')
-
-    engine_cls = spec['engine']
-    provider = spec['provider']
-
-    # if game doesnt need external data
-    if provider is None:
-        return engine_cls()
-
-    fetcher = lambda: provider(app.state.http)
-    return engine_cls(fetcher)
-
-
-# called by api/games route
+# called by api/games
 async def get_game_engine(request: Request,
                           game_id: str = Path(...)) -> GameEngine:
     '''
@@ -56,5 +39,22 @@ async def get_game_engine(request: Request,
     if not engine:
         raise error(404, f'Unknown game: {game_id}')
     return engine
+
+
+# called by main.py @asynccontextmanager so no Depends()
+async def init_game_engine(game_id: str, app: FastAPI) -> GameEngine:
+    spec = GAME_SPECS.get(game_id)
+    if not spec:
+        raise error(404, f'Unknown game: {game_id}')
+
+    engine_cls = spec['engine']
+    provider = spec['provider']
+
+    # if game doesnt need external data
+    if provider is None:
+        return engine_cls(game_id)
+
+    fetcher = lambda: provider(app.state.http)
+    return engine_cls(game_id, fetcher)
 
 

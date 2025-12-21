@@ -98,8 +98,8 @@ project/
 │   │   ├── config.py
 |   |   |
 │   │   ├── api/                # FastAPI Routers
-│   │   │   ├── games.py        # Game logic
 │   │   │   ├── auth.py         # Discord OAuth2 flow
+│   │   │   ├── games.py        # Game logic
 │   │   │   └── stats.py        # Player stats (for discord bot)
 |   |   |
 │   │   ├── engines/            # GameEngines (hot-swappable)
@@ -116,13 +116,13 @@ project/
 │   │   |   ├── game_states.py  # GameStateStore interface
 │   │   |   ├── sessions.py     # SessionManager & session ID
 │   │   |   ├── streak.py       # Daily streak logic  
-│   │   |   ├── leaderboard.py  # Daily rankings logic  
-│   │   |   ├── db_session.py   # Gets app.state.db_session
 │   │   |   ├── redis.py        # Gets app.state.redis
 │   │   |   └── http.py         # Gets app.state.http 
 |   |   |
 │   │   ├── services/           # Business-side logic 
-│   │   |   ├── reset.py        # Global reset sync (state TTL, game reset, stats)
+│   │   |   ├── leaderboard.py  # Daily rankings logic  
+│   │   |   ├── reset.py        # Daily reset logic (state TTL, game reset, stats)
+│   │   │   ├── save.py         # Redis -> DB before reset 
 │   │   |   └── error.py        # Wrapper for HTTPException
 |   |   |
 │   │   └── db/                 # asyncpg / sqlalchemy

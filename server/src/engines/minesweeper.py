@@ -4,13 +4,14 @@ Read engines/base.py for info.
 import asyncio
 
 from .base import GameEngine
+from ..services.save import save_stats
 
 
 class MinesweeperEngine(GameEngine):
     """
     """
-    def __init__(self):
-        super().__init__()
+    def __init__(self, game_id: str):
+        super().__init__(game_id)
         self.ndim: int = 8
         self.mines: list | None = None
 
@@ -28,7 +29,17 @@ class MinesweeperEngine(GameEngine):
             # check again after lock just in case
             if self._epoch == cur_epoch:
                 return False
-            # else is next epoch so new seed
+
+            prev_epoch = self._epoch
+            # on 1st run, no prev epoch so no persist
+            if prev_epoch is not None:
+                await save_stats(self._game_id,
+                                 prev_epoch,
+                                 self.get_max_score())
+            # after b/c if persist fails, stats are not lost
+            self._epoch = cur_epoch
+
+            # fetch new data and init
             self.mines = self.init_mines()
             self._epoch = cur_epoch
             return True
@@ -64,6 +75,8 @@ class MinesweeperEngine(GameEngine):
 
 
     def get_max_score(self) -> int:
+        if self.mines is None:
+            raise RuntimeError('Engine not initialized')
         return len(self.mines)
 
 
