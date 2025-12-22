@@ -1,38 +1,67 @@
-from fastapi import FastAPI as app
+from datetime import datetime
+import redis.asyncio as Redis
 
-import json
+from shared.game_reg import GAMES
+from ..db.models.stats import Stats
 
 
 # called by GameEngine().ensure_reset()
-async def save_stats(game_id: str, prev_epoch: str, max_score: int):
-    '''Saves game stats after daily reset.'''
-    redis = app.state.redis
-
+async def save_stats(game_id: str,
+                     prev_epoch: str,
+                     max_score: int,
+                     redis: Redis,
+                     db_session):
+    '''
+    Saves game stats after daily reset.
+    '''
     # increment streak after reset if requirements met
     await incr_streak(game_id, prev_epoch, redis)
+    streak = await redis.get(f'game:{game_id}:streak')
 
-    streak_key = f'game:{game_id}:streak'
     leaderboard_key = f'game:{game_id}:leaderboard:{prev_epoch}'
+    order = GAMES[game_id]['rank_order']
+    if order not in ('asc', 'desc'):
+        raise error(401, 'Invalid rank order')
 
-    streak = await redis.get(streak_key)
-    rankings = await redis.get(leaderboard_key)
+    if order == 'asc':
+        rankings = await redis.zrange(
+            leaderboard_key, 0, -1, withscores=True
+        )
+    else:
+        rankings = await redis.zrevrange(
+            leaderboard_key, 0, -1, withscores=True
+        )
 
-    # sqlalchemy model
-    stats = {
-        'game_id': game_id,
-        'date': prev_epoch[:-3],  # epoch: YYYY-MM-DD@HH
-        'streak': int(streak) if streak else 0,
-        'rankings': json.loads(rankings) if rankings else [],
-        'max_score': max_score,
-    }
+    rankings_list = [
+        {'user_id': user_id.decode('utf-8'), 'score': int(score)}
+        for user_id, score in rankings
+    ]
 
-    async with app.state.db_session as db:
+    stats = Stats(
+        game_id=game_id,
+        date=epoch_to_datetime(prev_epoch),
+        max_score=max_score,
+        streak=int(streak) if streak else 0,
+        rankings=rankings_list
+    )
+
+    async with db_session as db:
         async with db.begin():
             db.add(stats)
 
     # del after saving in case db fails
     # delete yesterday's stats since no TTL
-    guard_key = f'game:{game_id}:played:{epoch}'
+    guard_key = f'game:{game_id}:played:{prev_epoch}'
     await redis.delete(guard_key)
     await redis.delete(leaderboard_key)
+
+
+def epoch_to_datetime(epoch: str) -> datetime:
+    date, hour = epoch.split('@')
+    return datetime.fromisoformat(date).replace(
+        hour=int(hour),
+        minute=0,
+        second=0,
+        microsecond=0
+    )
 

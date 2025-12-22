@@ -2,6 +2,7 @@
 Read engines/base.py for info.
 '''
 import asyncio
+import redis.asyncio as Redis
 
 from .base import GameEngine
 from ..services.save import save_stats
@@ -10,8 +11,8 @@ from ..services.save import save_stats
 class MinesweeperEngine(GameEngine):
     """
     """
-    def __init__(self, game_id: str):
-        super().__init__(game_id)
+    def __init__(self, game_id: str, redis: Redis, db_session):
+        super().__init__(game_id, redis, db_session)
         self.ndim: int = 8
         self.mines: list | None = None
 
@@ -35,7 +36,9 @@ class MinesweeperEngine(GameEngine):
             if prev_epoch is not None:
                 await save_stats(self._game_id,
                                  prev_epoch,
-                                 self.get_max_score())
+                                 self.get_max_score(),
+                                 self._redis,
+                                 self._db_session)
             # after b/c if persist fails, stats are not lost
             self._epoch = cur_epoch
 

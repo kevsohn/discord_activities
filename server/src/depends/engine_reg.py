@@ -14,8 +14,7 @@ from ..engines.chess_puzzle import ChessPuzzleEngine
 from ..engines.minesweeper import MinesweeperEngine
 from ..providers.lichess import fetch_daily_puzzle
 
-
-GAME_SPECS = {
+ENGINES = {
     'chess_puzzle': {
         'engine': ChessPuzzleEngine,
         'provider': fetch_daily_puzzle,
@@ -43,18 +42,21 @@ async def get_game_engine(request: Request,
 
 # called by main.py @asynccontextmanager so no Depends()
 async def init_game_engine(game_id: str, app: FastAPI) -> GameEngine:
-    spec = GAME_SPECS.get(game_id)
-    if not spec:
+    engine = ENGINES.get(game_id)
+    if not engine:
         raise error(404, f'Unknown game: {game_id}')
 
-    engine_cls = spec['engine']
-    provider = spec['provider']
+    engine_cls = engine['engine']
+    provider = engine['provider']
 
     # if game doesnt need external data
     if provider is None:
-        return engine_cls(game_id)
+        return engine_cls(game_id, app.state.redis, app.state.db_session)
 
     fetcher = lambda: provider(app.state.http)
-    return engine_cls(game_id, fetcher)
+    return engine_cls(game_id,
+                      app.state.redis,
+                      app.state.db_session,
+                      fetcher)
 
 

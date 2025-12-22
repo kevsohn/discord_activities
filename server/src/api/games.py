@@ -3,6 +3,7 @@ Game logic interface for the frontend
 '''
 from fastapi import APIRouter, Depends
 
+from ..depends.redis import get_redis
 from ..depends.sessions import get_session_id, get_session_manager
 from ..depends.engine_reg import get_game_engine
 from ..depends.game_states import get_state_store
@@ -10,10 +11,11 @@ from ..depends.streak import mark_played
 from ..services.leaderboard import rank_player
 from ..services.reset import get_current_epoch, seconds_til_next_reset
 
-
 router = APIRouter(prefix="/games", tags=["games"])
 
+
 # session_id gated
+# mark_played checks if streak should be incremented
 @router.get("/{game_id}/start")
 async def start(game_id: str,
                 session_id=Depends(get_session_id),
@@ -49,7 +51,8 @@ async def update(game_id: str,
                  session_id=Depends(get_session_id),
                  sessions=Depends(get_session_manager),
                  engine=Depends(get_game_engine),
-                 states=Depends(get_state_store)) -> dict:
+                 states=Depends(get_state_store),
+                 redis=Depends(get_redis)) -> dict:
     '''
     Returns the updated state for the requested game.
     '''
@@ -71,7 +74,7 @@ async def update(game_id: str,
     await states.store(game_id, user_id, epoch, state, ttl)
 
     # live leaderboard update
-    await rank_player(game_id, user_id, epoch, state['score'])
+    await rank_player(game_id, user_id, epoch, state['score'], redis)
 
     return state
 

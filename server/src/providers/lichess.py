@@ -6,7 +6,6 @@ import chess.pgn
 
 from ..services.error import error
 
-
 LICHESS_API_URL = "https://lichess.org/api"
 
 
@@ -25,6 +24,14 @@ async def fetch_daily_puzzle(http_client) -> dict:
     }
 
 
+async def fetch_puzzle_metadata(http_client) -> dict:
+    data = fetch_lichess_puzzle(http_client)
+    rating = data['puzzle']['rating']
+    return {
+        'rating': rating
+    }
+
+
 async def fetch_lichess_puzzle(http_client) -> dict:
     '''Returns the lichess daily puzzle.'''
     r = await http_client.get(f'{LICHESS_API_URL}/puzzle/daily')
@@ -32,14 +39,6 @@ async def fetch_lichess_puzzle(http_client) -> dict:
         raise error(r.status_code, 'Failed to fetch daily chess puzzle')
 
     return r.json()
-
-
-async def fetch_puzzle_metadata(http_client) -> dict:
-    data = fetch_lichess_puzzle(http_client)
-    rating = data['puzzle']['rating']
-    return {
-        'rating': rating
-    }
 
 
 def pgn_to_fen(pgn: str, initial_ply: int) -> str:

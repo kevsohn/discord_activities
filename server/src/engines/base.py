@@ -3,6 +3,7 @@ Interface for hot-swappable games
 '''
 from abc import ABC, abstractmethod
 import asyncio
+import redis.asyncio as Redis
 
 
 class GameEngine(ABC):
@@ -11,8 +12,10 @@ class GameEngine(ABC):
     User states are stored in GameStateStore.
     Class only holds truths shared by all players, like solution.
     '''
-    def __init__(self, game_id: str):
+    def __init__(self, game_id: str, redis: Redis, db_session):
         self._game_id = game_id
+        self._redis = redis
+        self._db_session = db_session
         self._lock = asyncio.Lock()  # to prevent data races
         self._epoch: str | None = None
 

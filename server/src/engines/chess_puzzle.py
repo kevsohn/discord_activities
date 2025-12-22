@@ -3,6 +3,7 @@ Read engines/base.py for info.
 '''
 from collections.abc import Callable, Awaitable
 import asyncio
+import redis.asyncio as Redis
 from chess import Board
 
 from .base import GameEngine
@@ -14,8 +15,12 @@ class ChessPuzzleEngine(GameEngine):
     Board must be given in FEN.
     Player moves and solutions must be in UCI.
     """
-    def __init__(self, game_id: str, fetcher: Callable[[], Awaitable[dict]]):
-        super().__init__(game_id)
+    def __init__(self,
+                 game_id: str,
+                 redis: Redis,
+                 db_session,
+                 fetcher: Callable[[], Awaitable[dict]]):
+        super().__init__(game_id, redis, db_session)
         self._fetcher = fetcher   # = lambda: provider(http)
         self.fen: str | None = None
         self.solution: list[str] | None = None
@@ -40,7 +45,9 @@ class ChessPuzzleEngine(GameEngine):
             if prev_epoch is not None:
                 await save_stats(self._game_id,
                                  prev_epoch,
-                                 self.get_max_score())
+                                 self.get_max_score(),
+                                 self._redis,
+                                 self._db_session)
             # after b/c if persist fails, stats are not lost
             self._epoch = cur_epoch
 

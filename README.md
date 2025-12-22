@@ -127,6 +127,7 @@ project/
 |   |   |
 │   │   └── db/                 # asyncpg / sqlalchemy
 │   │       ├── models/         # Alchemy models
+│   │       |   └── stats.py    
 │   │       └── queries/    
 │   │
 │   └── test/

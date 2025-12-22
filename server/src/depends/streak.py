@@ -1,4 +1,5 @@
 from fastapi import Depends
+from redis.asyncio import Redis
 
 from .redis import get_redis
 from ..services.reset import get_current_epoch
@@ -9,6 +10,8 @@ async def mark_played(game_id: str, redis=Depends(get_redis)):
     '''
     Mark if the game has been played today.
     '''
+    epoch = get_current_epoch()
+
     guard_key = f'game:{game_id}:played:{epoch}'
     # set guard key only on first play of the day.
     # True if guard key has been set today
@@ -16,12 +19,11 @@ async def mark_played(game_id: str, redis=Depends(get_redis)):
         return
 
     # if first play of day, update last played epoch to now
-    epoch = get_current_epoch()
     await redis.set(f'game:{game_id}:last_played_epoch', epoch)
 
 
 # called in services.save
-async def incr_streak(game_id: str, prev_epoch: str, redis):
+async def incr_streak(game_id: str, prev_epoch: str, redis: Redis):
     '''
     Increment streak if played on consecutive days.
     '''
