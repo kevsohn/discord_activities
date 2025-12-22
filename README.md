@@ -116,6 +116,7 @@ project/
 │   │   |   ├── game_states.py  # GameStateStore interface
 │   │   |   ├── sessions.py     # SessionManager & session ID
 │   │   |   ├── streak.py       # Daily streak logic  
+│   │   |   ├── db_session.py   # Gets app.state.db_session  
 │   │   |   ├── redis.py        # Gets app.state.redis
 │   │   |   └── http.py         # Gets app.state.http 
 |   |   |

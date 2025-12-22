@@ -1,5 +1,6 @@
 from datetime import datetime
 import redis.asyncio as Redis
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.game_reg import GAMES
 from ..db.models.stats import Stats
@@ -10,7 +11,7 @@ async def save_stats(game_id: str,
                      prev_epoch: str,
                      max_score: int,
                      redis: Redis,
-                     db_session):
+                     db_session: AsyncSession):
     '''
     Saves game stats after daily reset.
     '''
@@ -32,6 +33,7 @@ async def save_stats(game_id: str,
             leaderboard_key, 0, -1, withscores=True
         )
 
+    # to make output JSON-serializable
     rankings_list = [
         {'user_id': user_id.decode('utf-8'), 'score': int(score)}
         for user_id, score in rankings
@@ -40,9 +42,9 @@ async def save_stats(game_id: str,
     stats = Stats(
         game_id=game_id,
         date=epoch_to_datetime(prev_epoch),
+        rankings=rankings_list,
         max_score=max_score,
-        streak=int(streak) if streak else 0,
-        rankings=rankings_list
+        streak=int(streak) if streak else 0
     )
 
     async with db_session as db:

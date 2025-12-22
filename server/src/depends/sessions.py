@@ -4,6 +4,7 @@ from redis.asyncio import Redis
 
 from ..config import SESSION_TTL
 from .redis import get_redis
+from ..services.error import error
 
 
 def get_session_id(request: Request):
