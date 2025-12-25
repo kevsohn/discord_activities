@@ -7,7 +7,7 @@ import redis.asyncio as Redis
 from chess import Board
 
 from .base import GameEngine
-from ..services.save import save_stats
+from ..services.save import save_stats_to_db
 
 
 class ChessPuzzleEngine(GameEngine):
@@ -43,11 +43,11 @@ class ChessPuzzleEngine(GameEngine):
             prev_epoch = self._epoch
             # on 1st run, no prev epoch so no persist
             if prev_epoch is not None:
-                await save_stats(self._game_id,
-                                 prev_epoch,
-                                 self.get_max_score(),
-                                 self._redis,
-                                 self._db_session)
+                await save_stats_to_db(self._game_id,
+                                       prev_epoch,
+                                       self.get_max_score(),
+                                       self._redis,
+                                       self._db_session_factory)
             # after b/c if persist fails, stats are not lost
             self._epoch = cur_epoch
 

@@ -12,10 +12,10 @@ class GameEngine(ABC):
     User states are stored in GameStateStore.
     Class only holds truths shared by all players, like solution.
     '''
-    def __init__(self, game_id: str, redis: Redis, db_session):
+    def __init__(self, game_id: str, redis: Redis, db_session_factory):
         self._game_id = game_id
         self._redis = redis
-        self._db_session = db_session
+        self._db_session_factory = db_session_factory
         self._lock = asyncio.Lock()  # to prevent data races
         self._epoch: str | None = None
 

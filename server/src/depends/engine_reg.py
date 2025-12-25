@@ -51,12 +51,12 @@ async def init_game_engine(game_id: str, app: FastAPI) -> GameEngine:
 
     # if game doesnt need external data
     if provider is None:
-        return engine_cls(game_id, app.state.redis, app.state.db_session)
+        return engine_cls(game_id, app.state.redis, app.state.db_session_factory)
 
     fetcher = lambda: provider(app.state.http)
     return engine_cls(game_id,
                       app.state.redis,
-                      app.state.db_session,
+                      app.state.db_session_factory,
                       fetcher)
 
 

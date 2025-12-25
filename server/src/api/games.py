@@ -26,8 +26,10 @@ async def start(game_id: str,
     '''
     Returns the init state for the requested game.
     '''
+    session = await sessions.get(session_id)
+
     # key must match fetch_user_info() in api/auth.py
-    user_id = sessions.get(session_id)['id']  # want KeyError
+    user_id = session['id']  # want KeyError
     if user_id is None:
         raise error(401, 'Session expired')
 
@@ -41,6 +43,7 @@ async def start(game_id: str,
         ttl = seconds_til_next_reset()
         state = engine.get_init_state()
         await states.store(game_id, user_id, epoch, state, ttl)
+
     return state
 
 
@@ -56,7 +59,10 @@ async def update(game_id: str,
     '''
     Returns the updated state for the requested game.
     '''
-    user_id = sessions.get(session_id)['id']
+    session = await sessions.get(session_id)
+
+    # key must match fetch_user_info() in api/auth.py
+    user_id = session['id']  # want KeyError
     if user_id is None:
         raise error(401, 'Session expired')
 

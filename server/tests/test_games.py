@@ -3,45 +3,62 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_game_start(game_id, client, redis_client):
+    import json
+
     # mock session manager
     session_id = "testsession123"
-    user_id = "user1"
-    await redis_client.set(f"session:{session_id}", user_id)
+    user_info = {'id': "user1"}
+    await redis_client.set(f"session:{session_id}", json.dumps(user_info))
 
     r = await client.get(f"/games/{game_id}/start",
-                                headers={"Cookie": f"session_id={session_id}"})
-
+                         headers={"Cookie": f"session_id={session_id}"})
     assert r.status_code == 200
-    data = r.json()
-    assert "fen" in data
-    assert "moves" in data
-    assert data["score"] == 0
-    assert data['gameover'] == False
-    assert data['won'] == False
+    state = r.json()
+
+    assert 'fen' in state
+    assert state['moves'] == []
+    assert state['score'] == 0
+    assert state['gameover'] == False
+    assert state['won'] == False
 
 
 @pytest.mark.asyncio
-async def test_game_update_advances_state(game_id, client, redis_client):
+async def test_game_update(game_id, client, redis_client):
+    import json
+    from chess import Board
+
     session_id = "testsession456"
-    user_id = "user2"
+    user_info = {'id': "user2"}
+    await redis_client.set(f"session:{session_id}", json.dumps(user_info))
 
-    await redis_client.set(f"session:{session_id}", user_id)
+    # start chess game to initialize state
+    r = await client.get(f"/games/{game_id}/start",
+                         headers={"Cookie": f"session_id={session_id}"})
+    assert r.status_code == 200
+    init_state = r.json()
 
-    # start game to initialize state
-    await client.get(f"/games/{game_id}/start",
-                     headers={"Cookie": f"session_id={session_id}"})
-
+    # make a probably illegal move in the puzzle
+    move = 'e2e4'
     payload = {
-        "state": {"fen": 'start_fen', "moves": [], "score": 0, "gameover": False, "won": False},
-        "action": {"uci": "e2e4"}
+        'state': init_state,
+        'action': {"uci": move}
     }
 
     r = await client.post(f"/games/{game_id}/update",
-                                 json=payload,
-                                 headers={"Cookie": f"session_id={session_id}"})
+                          json=payload,
+                          headers={"Cookie": f"session_id={session_id}"})
     assert r.status_code == 200
-    data = r.json()
-    assert data["score"] == 1
-    assert data["moves"] == ["e2e4"]
+    state = r.json()
+
+    # expected
+    board = Board(init_state['fen'])
+    board.push_uci(move)
+    expected_fen = board.fen()
+
+    assert state['fen'] == expected_fen
+    assert state['moves'] == [move]
+    assert state['score'] == 0
+    assert state['gameover'] == True
+    assert state['won'] == False
 
 

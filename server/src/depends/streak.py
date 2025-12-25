@@ -30,6 +30,8 @@ async def incr_streak(game_id: str, prev_epoch: str, redis: Redis):
     #assert prev_epoch is not None
     streak_key = f'game:{game_id}:streak'
     last_played = await redis.get(f'game:{game_id}:last_played_epoch')
+    if isinstance(last_played, bytes):
+        last_played = last_played.decode('utf-8')
 
     # if last played == yesterday, then incr else reset
     if last_played == prev_epoch:

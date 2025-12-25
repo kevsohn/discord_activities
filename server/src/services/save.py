@@ -1,25 +1,29 @@
 from datetime import datetime
 import redis.asyncio as Redis
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.dialects.postgresql import insert
 
 from shared.game_reg import GAMES
 from ..db.models.stats import Stats
+from .error import error
+from ..depends.streak import incr_streak
 
 
 # called by GameEngine().ensure_reset()
-async def save_stats(game_id: str,
-                     prev_epoch: str,
-                     max_score: int,
-                     redis: Redis,
-                     db_session: AsyncSession):
+async def save_stats_to_db(game_id: str,
+                           prev_epoch: str,
+                           max_score: int,
+                           redis: Redis,
+                           db_session_factory: async_sessionmaker):
     '''
-    Saves game stats after daily reset.
+    Persist game stats after daily reset.
     '''
     # increment streak after reset if requirements met
     await incr_streak(game_id, prev_epoch, redis)
     streak = await redis.get(f'game:{game_id}:streak')
 
     leaderboard_key = f'game:{game_id}:leaderboard:{prev_epoch}'
+
     order = GAMES[game_id]['rank_order']
     if order not in ('asc', 'desc'):
         raise error(401, 'Invalid rank order')
@@ -33,7 +37,7 @@ async def save_stats(game_id: str,
             leaderboard_key, 0, -1, withscores=True
         )
 
-    # to make output JSON-serializable
+    # to make output JSON-serializable bc redis returns b''
     rankings_list = [
         {'user_id': user_id.decode('utf-8'), 'score': int(score)}
         for user_id, score in rankings
@@ -47,9 +51,24 @@ async def save_stats(game_id: str,
         streak=int(streak) if streak else 0
     )
 
-    async with db_session as db:
-        async with db.begin():
-            db.add(stats)
+    async with db_session_factory() as db_session:
+        async with db_session.begin():
+            stmt = insert(Stats).values(
+                game_id=game_id,
+                date=epoch_to_datetime(prev_epoch),
+                rankings=rankings_list,
+                max_score=max_score,
+                streak=int(streak) if streak else 0,
+            ).on_conflict_do_update(
+                index_elements=[Stats.game_id],
+                set_={
+                    "date": epoch_to_datetime(prev_epoch),
+                    "rankings": rankings_list,
+                    "max_score": max_score,
+                    "streak": int(streak) if streak else 0,
+                },
+            )
+            await db_session.execute(stmt)
 
     # del after saving in case db fails
     # delete yesterday's stats since no TTL
@@ -59,9 +78,8 @@ async def save_stats(game_id: str,
 
 
 def epoch_to_datetime(epoch: str) -> datetime:
-    date, hour = epoch.split('@')
-    return datetime.fromisoformat(date).replace(
-        hour=int(hour),
+    return datetime.fromisoformat(epoch).replace(
+        hour=0,
         minute=0,
         second=0,
         microsecond=0

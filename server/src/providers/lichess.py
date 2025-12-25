@@ -12,7 +12,7 @@ LICHESS_API_URL = "https://lichess.org/api"
 # http_client is currently httpx.AsyncClient but can be swapped
 async def fetch_daily_puzzle(http_client) -> dict:
     '''Returns the daily puzzle in FEN format.'''
-    data = fetch_lichess_puzzle(http_client)
+    data = await fetch_lichess_puzzle(http_client)
 
     pgn = data['game']['pgn']
     init_ply = data['puzzle']['initialPly']
@@ -25,7 +25,7 @@ async def fetch_daily_puzzle(http_client) -> dict:
 
 
 async def fetch_puzzle_metadata(http_client) -> dict:
-    data = fetch_lichess_puzzle(http_client)
+    data = await fetch_lichess_puzzle(http_client)
     rating = data['puzzle']['rating']
     return {
         'rating': rating

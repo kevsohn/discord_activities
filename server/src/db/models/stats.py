@@ -5,7 +5,7 @@ from sqlalchemy.orm import declarative_base
 Base = declarative_base()
 
 
-class Stats(Base, AsyncAttrs):
+class Stats(AsyncAttrs, Base):
     __tablename__ = "stats"
     game_id = Column(String, primary_key=True)
     date = Column(DateTime, nullable=False)
