@@ -79,6 +79,7 @@ async def client(redis_client, db_engine, db_session_factory, http_client):
         async with AsyncClient(transport=transport, base_url="http://test") as test_client:
             yield test_client
 
+    # allow main.py to close conns before null
     app.state.http = None
     app.state.redis = None
     app.state.db_session = None

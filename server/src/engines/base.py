@@ -33,7 +33,7 @@ class GameEngine(ABC):
 
 
     @abstractmethod
-    def get_init_state(self) -> dict:
+    def init_state(self) -> dict:
         '''
         Returns game's init state as a JSON-serializable dict.
         state = {
@@ -53,8 +53,8 @@ class GameEngine(ABC):
 
 
     @abstractmethod
-    def get_max_score(self) -> int:
-        '''Returns max score for display and ranking purposes'''
+    def get_max_turn(self) -> int:
+        '''Returns max turn for display and ranking purposes'''
         pass
 
 

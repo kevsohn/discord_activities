@@ -15,17 +15,18 @@ async def test_game_start(game_id, client, redis_client):
     assert r.status_code == 200
     state = r.json()
 
+    assert 'rating' in state
+    assert 'start_colour' in state
     assert 'fen' in state
-    assert state['moves'] == []
+    assert state['ply'] == 0
     assert state['score'] == 0
     assert state['gameover'] == False
-    assert state['won'] == False
 
 
 @pytest.mark.asyncio
 async def test_game_update(game_id, client, redis_client):
     import json
-    from chess import Board
+    import chess
 
     session_id = "testsession456"
     user_info = {'id': "user2"}
@@ -37,8 +38,8 @@ async def test_game_update(game_id, client, redis_client):
     assert r.status_code == 200
     init_state = r.json()
 
-    # make a probably illegal move in the puzzle
-    move = 'e2e4'
+    # make legal move
+    move = 'e6d5'
     payload = {
         'state': init_state,
         'action': {"uci": move}
@@ -50,15 +51,52 @@ async def test_game_update(game_id, client, redis_client):
     assert r.status_code == 200
     state = r.json()
 
+    if state.get('illegal'):
+        print("Illegal move")
+
     # expected
-    board = Board(init_state['fen'])
+    board = chess.Board(init_state['fen'])
     board.push_uci(move)
-    expected_fen = board.fen()
 
-    assert state['fen'] == expected_fen
-    assert state['moves'] == [move]
+    assert state['fen'] == board.fen()
+    assert state['ply'] == 1
     assert state['score'] == 0
-    assert state['gameover'] == True
-    assert state['won'] == False
+    assert state['gameover'] == False
 
+
+@pytest.mark.asyncio
+async def test_house_turn(game_id, client, redis_client):
+    import json
+    import chess
+
+    session_id = "testsession456"
+    user_info = {'id': "user2"}
+    await redis_client.set(f"session:{session_id}", json.dumps(user_info))
+
+    # start chess game to initialize state
+    r = await client.get(f"/games/{game_id}/start",
+                         headers={"Cookie": f"session_id={session_id}"})
+    assert r.status_code == 200
+    init_state = r.json()
+
+    # mock update call
+    board = chess.Board(init_state['fen'])
+    board.push_uci('e6d5')
+    init_state['fen'] = board.fen()
+    init_state['ply'] = 1
+
+    payload = {'state': init_state}
+    r = await client.post(f"/games/{game_id}/house_turn",
+                          json=payload,
+                          headers={"Cookie": f"session_id={session_id}"})
+    assert r.status_code == 200
+    state = r.json()
+
+    # expected opp move
+    board.push_uci('c2c8')
+
+    assert state['fen'] == board.fen()
+    assert state['ply'] == 2
+    assert state['score'] == 0
+    assert state['gameover'] == False
 

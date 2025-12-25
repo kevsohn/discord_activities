@@ -41,9 +41,8 @@ async def start(game_id: str,
         # order matters in case user plays close to reset
         # want state to timeout first
         ttl = seconds_til_next_reset()
-        state = engine.get_init_state()
+        state = engine.init_state()
         await states.store(game_id, user_id, epoch, state, ttl)
-
     return state
 
 
@@ -81,7 +80,35 @@ async def update(game_id: str,
 
     # live leaderboard update
     await rank_player(game_id, user_id, epoch, state['score'], redis)
+    return state
 
+
+# session_id gated
+@router.post("/{game_id}/house_turn")
+async def house_turn(game_id: str,
+                     payload: dict,
+                     session_id=Depends(get_session_id),
+                     sessions=Depends(get_session_manager),
+                     engine=Depends(get_game_engine),
+                     states=Depends(get_state_store)) -> dict:
+    '''
+    Plays the house turn for the requested game.
+    '''
+    session = await sessions.get(session_id)
+
+    user_id = session['id']
+    if user_id is None:
+        raise error(401, 'Session expired')
+
+    epoch = get_current_epoch()
+    ttl = seconds_til_next_reset()
+
+    is_reset = await engine.ensure_reset(epoch)
+    if is_reset:
+        raise error(409, 'Game reset, restart required')
+
+    state = engine.play_house_turn(payload["state"])
+    await states.store(game_id, user_id, epoch, state, ttl)
     return state
 
 

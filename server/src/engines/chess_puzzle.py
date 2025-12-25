@@ -2,9 +2,11 @@
 Read engines/base.py for info.
 '''
 from collections.abc import Callable, Awaitable
-import asyncio
 import redis.asyncio as Redis
-from chess import Board
+import asyncio
+import chess
+import io
+from math import ceil
 
 from .base import GameEngine
 from ..services.save import save_stats_to_db
@@ -22,8 +24,9 @@ class ChessPuzzleEngine(GameEngine):
                  fetcher: Callable[[], Awaitable[dict]]):
         super().__init__(game_id, redis, db_session)
         self._fetcher = fetcher   # = lambda: provider(http)
-        self.fen: str | None = None
+        self.start_fen: str | None = None
         self.solution: list[str] | None = None
+        self.rating: int | None = None
 
 
     async def ensure_reset(self, cur_epoch: str) -> bool:
@@ -45,26 +48,32 @@ class ChessPuzzleEngine(GameEngine):
             if prev_epoch is not None:
                 await save_stats_to_db(self._game_id,
                                        prev_epoch,
-                                       self.get_max_score(),
+                                       self.get_max_turn(),
                                        self._redis,
                                        self._db_session_factory)
             # after b/c if persist fails, stats are not lost
             self._epoch = cur_epoch
 
-            # fetch new data and init
-            data = await self._fetcher()
-            self.fen = data['fen']
-            self.solution = data['solution']
+            # fetch new puzzle and init
+            puzzle = await self._fetcher()
+            board = chess.Board(puzzle['fen'])
+            board.push_uci(puzzle['moves'][0])  # house turn
+
+            self.start_fen = board.fen()
+            self.solution = puzzle['moves'][1:]
+            self.rating = puzzle['rating']
             return True
 
 
-    def get_init_state(self) -> dict:
+    def init_state(self) -> dict:
+        start_colour = self.start_fen.split()[1]  # <FEN> <active_color> ...
         return {
-            "fen": self.fen,
-            "moves": [],
-            "score": 0,         # no. successful turns
+            "fen": self.start_fen,
+            "ply": 0,  # no. moves (incl opp)
+            "score": 0,  # no. wrong tries (i.e. 0/max_turn == best)
             "gameover": False,
-            "won": False
+            "rating": self.rating,
+            "start_colour": start_colour,
         }
 
 
@@ -72,40 +81,55 @@ class ChessPuzzleEngine(GameEngine):
         if state['gameover']:
             return state
 
-        board = Board(state["fen"])
-        move = action["uci"]
-        i = len(state['moves'])  # i lags turn by 1
+        board = chess.Board(state['fen'])
 
-        # if wrong move, gameover
-        if i >= len(self.solution) or move != self.solution[i]:
-            return {**state, 'gameover': True, 'won': False}
+        # if illegal move, return given state
+        move = chess.Move.from_uci(action['uci'])  # chess.Move!!!
+        if move not in board.legal_moves:
+            return {**state, 'illegal': True}
 
-        # correct
-        board.push_uci(move)
-        new_moves = state['moves'] + [move]
-        new_score = i+1
-
-        # check if last move
-        if new_score == self.get_max_score():
+        # if wrong move, score++ and return state to try again
+        ply = state['ply']
+        if ply >= len(self.solution) or move.uci() != self.solution[ply]:
             return {
                 "fen": board.fen(),
-                "moves": new_moves,
-                "score": new_score,
-                "gameover": True,
-                "won": True
+                "ply": ply,
+                "score": state['score'] + 1,
+                "gameover": False
             }
-        # cont
+
+        # correct; set up opponent's turn
+        board.push(move)
+        ply += 1
+
+        # check if last move
+        gameover = ply >= len(self.solution)
         return {
             "fen": board.fen(),
-            "moves": new_moves,
-            "score": new_score,
-            "gameover": False,
-            "won": False
+            "ply": ply,
+            "score": state['score'],
+            "gameover": gameover
         }
 
 
-    def get_max_score(self) -> int:
+    def play_house_turn(self, state: dict):
+        if state['gameover']:
+            return state
+
+        ply = state['ply']
+        board = chess.Board(state['fen'])
+        board.push_uci(self.solution[ply])  # UCI!!!
+
+        return {
+            'fen': board.fen(),
+            'ply': ply + 1,
+            'score': state['score'],
+            'gameover': state['gameover'],
+        }
+
+
+    def get_max_turn(self) -> int:
         if self.solution is None:
             raise RuntimeError('Engine not initialized')
-        return len(self.solution)
+        return ceil(len(self.solution)/2)
 

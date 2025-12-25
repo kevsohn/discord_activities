@@ -36,7 +36,7 @@ class MinesweeperEngine(GameEngine):
             if prev_epoch is not None:
                 await save_stats_to_db(self._game_id,
                                        prev_epoch,
-                                       self.get_max_score(),
+                                       self.get_max_turn(),
                                        self._redis,
                                        self._db_session_factory)
             # after b/c if persist fails, stats are not lost
@@ -48,7 +48,7 @@ class MinesweeperEngine(GameEngine):
             return True
 
 
-    def get_init_state(self) -> dict:
+    def init_state(self) -> dict:
         mines = self.init_mines()
         self.max_score = len(mines)
         return {
@@ -77,7 +77,7 @@ class MinesweeperEngine(GameEngine):
         }
 
 
-    def get_max_score(self) -> int:
+    def get_max_turn(self) -> int:
         if self.mines is None:
             raise RuntimeError('Engine not initialized')
         return len(self.mines)

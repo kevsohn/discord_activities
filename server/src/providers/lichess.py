@@ -1,60 +1,45 @@
 '''
 Data provider for ChessPuzzleEngine.
 '''
-import io
-import chess.pgn
-
 from ..services.error import error
 
-LICHESS_API_URL = "https://lichess.org/api"
+API_URL = 'https://chess-puzzles.p.rapidapi.com/'
+RATING = 1500
 
 
 # http_client is currently httpx.AsyncClient but can be swapped
 async def fetch_daily_puzzle(http_client) -> dict:
-    '''Returns the daily puzzle in FEN format.'''
-    data = await fetch_lichess_puzzle(http_client)
-
-    pgn = data['game']['pgn']
-    init_ply = data['puzzle']['initialPly']
-    fen = pgn_to_fen(pgn, init_ply)
-
-    return {
-        'fen': fen,
-        'solution': data['puzzle']['solution'],
+    '''
+    Returns the lichess daily puzzle.
+    '''
+    headers = {
+        "x-rapidapi-key": "577e35e7c9msh9808fce86f3b4aap1adf59jsne16c3a46b8cf",
+        "x-rapidapi-host": "chess-puzzles.p.rapidapi.com"
+    }
+    params = {
+        #'rating': f'{RATING}',
+        #'count': '1',
+        'id': 'HxxIU',  # for testing
     }
 
-
-async def fetch_puzzle_metadata(http_client) -> dict:
-    data = await fetch_lichess_puzzle(http_client)
-    rating = data['puzzle']['rating']
-    return {
-        'rating': rating
-    }
-
-
-async def fetch_lichess_puzzle(http_client) -> dict:
-    '''Returns the lichess daily puzzle.'''
-    r = await http_client.get(f'{LICHESS_API_URL}/puzzle/daily')
+    r = await http_client.get(
+        API_URL,
+        headers=headers,
+        params=params
+    )
     if r.status_code != 200:
         raise error(r.status_code, 'Failed to fetch daily chess puzzle')
+    data = r.json()
 
-    return r.json()
-
-
-def pgn_to_fen(pgn: str, initial_ply: int) -> str:
+    puzzle = data['puzzles'][0]
     '''
-    i.e. full game history -> specific game position.
-    A "ply" is a single move by one player (half-move).
+    FEN is the position before the opponent makes their move.
+    The position to present to the player is after applying the first move
+    to that FEN. The second move is the beginning of the solution.
     '''
-    game = chess.pgn.read_game(io.StringIO(pgn))
-    board = game.board()
-
-    for i, move in enumerate(game.mainline_moves()):
-        if i == initial_ply:  # ply is 0-indexed like i
-            break
-        board.push(move)
-
-    return board.fen()
-
-
+    return {
+        'fen': puzzle['fen'],
+        'moves': puzzle['moves'],  # UCI
+        'rating': puzzle['rating']
+    }
 

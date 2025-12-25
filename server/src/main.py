@@ -47,8 +47,8 @@ async def lifespan(app: FastAPI):
     print('Game Engines initialized')
 
     yield
-
     print('Server shutting down...')
+
     await app.state.http.aclose()
     print('HTTP client shutdown')
     await app.state.redis.aclose()
