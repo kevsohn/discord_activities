@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from shared.game_reg import GAMES
 from server.src.config import REQUEST_TIMEOUT, REDIS_HOST, REDIS_PORT, DB_URL
 from server.src.depends.engine_reg import init_game_engine
+from server.src.db.models.stats import Base
 
 from server.src.api.auth import router as auth_router
 from server.src.api.games import router as games_router
@@ -23,11 +24,15 @@ async def lifespan(app: FastAPI):
         pool_pre_ping=True,  # pre-ping to check conn is alive
         echo=False,  # dont echo all queries
     )
+    print('DB engine: OK')
+    async with app.state.db_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    print('Table created')
     app.state.db_session_factory = async_sessionmaker(
         app.state.db_engine,
         expire_on_commit=False,  # persist conn after commit
     )
-    print('DB startup: OK')
+    print('DB session: OK')
 
     app.state.redis = redis.Redis(
         host=REDIS_HOST,

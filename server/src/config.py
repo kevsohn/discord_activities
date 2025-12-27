@@ -2,9 +2,9 @@ from os import environ
 from dotenv import load_dotenv
 
 # adjustable constants
-GAME_RESET_HOUR = 0     # midnight UTC
-SESSION_TTL = 3600*36   # session lifetime in secs
-REQUEST_TIMEOUT = 10    # httpx client timeout in secs
+GAME_RESET_HOUR = 0   # midnight UTC
+SESSION_TTL = 60*10   # session lifetime in secs
+REQUEST_TIMEOUT = 10  # httpx client timeout in secs
 
 load_dotenv()  # exports .env
 

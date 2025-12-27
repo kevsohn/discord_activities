@@ -1,17 +1,22 @@
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from secrets import token_urlsafe
+from pydantic import BaseModel
 
 from ..config import SESSION_TTL, DISCORD_API_URL, CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 from ..depends.http import get_http_client
 from ..depends.sessions import get_session_manager
 from ..services.error import error
 
-
 router = APIRouter(prefix="/api/auth")
 
+# pydantic model: parses JSON from request body and handles errors
+class TokenRequest(BaseModel):
+    code: str
+
+
 @router.post('/token')
-async def exchange_code(code: str,
+async def exchange_code(body: TokenRequest,
                         http=Depends(get_http_client),
                         sessions=Depends(get_session_manager)) -> str:
     '''
@@ -23,6 +28,7 @@ async def exchange_code(code: str,
      - sets HTTP-only session cookie
      - returns access token
     '''
+    code = body.code
     access_token = await fetch_access_token(code, http)
     user_info = await fetch_user_info(access_token, http)
 
