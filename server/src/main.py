@@ -70,7 +70,10 @@ app = FastAPI(title="Discord Activities API", lifespan=lifespan)
 # apparently needed for Discord iframe
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  #["https://discord.com","https://*.discordsays.com"]
+    allow_origins=[
+        "https://discord.com",
+        "https://*.trycloudflare.com",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

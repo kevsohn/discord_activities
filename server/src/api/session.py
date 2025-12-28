@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from secrets import token_urlsafe
 
 from ..depends.sessions import get_session_manager, get_session_id
+from ..services.reset import seconds_til_next_reset
 
 router = APIRouter(prefix="/api/session")
 
@@ -23,8 +24,7 @@ async def create_session(body: CreateRequest,
     Frontend sends session id and discord id.
     Backend:
      - creates session in Redis
-     - sets HTTP-only session cookie
-     - returns cookie
+     - sets and returns HTTP-only session cookie
     '''
     session_id = token_urlsafe(32)
     await sessions.create(session_id, body.user_id)
@@ -34,23 +34,25 @@ async def create_session(body: CreateRequest,
         key='session_id',
         value=session_id,
         httponly=True,
-        secure=True,          # HTTPS
-        samesite='none',      # req for Activities iframe
-        max_age=sessions.ttl,
+        secure=True,      # HTTPS
+        samesite='none',  # req for Activities iframe
+        max_age=seconds_til_next_reset(),  # != sessions.ttl
+        path='/'  # controls which urls the browser sends cookies to
     )
     return r
 
 
 # session id gated
-@router.post('/delete')
-async def create_session(session_id: str = Depends(get_session_id),
-                         sessions = Depends(get_session_manager)):
+@router.post('/heartbeat')
+async def heartbeat(session_id: str = Depends(get_session_id),
+                    sessions = Depends(get_session_manager)):
     '''
-    Deletes stored session id on user disconnect.
+    Frontend sends heartbeat every 20 secs;
+    Backend extends session ttl every beat.
     '''
-    await sessions.delete(session_id)
+    ok = await sessions.heartbeat(session_id)
+    if not ok:
+        raise error(404, 'Session expired')
+    return JSONResponse({'ok': True})
 
-    r = JSONResponse({})
-    r.delete_cookie("session_id")
-    return r
 

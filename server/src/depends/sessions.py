@@ -19,7 +19,9 @@ def get_session_manager(redis=Depends(get_redis)):
 
 
 class SessionManager:
-    '''Redis interface for sessions.'''
+    '''
+    Redis interface for sessions.
+    '''
     def __init__(self, redis: Redis, ttl=SESSION_TTL):
         self.redis = redis
         self.ttl = ttl
@@ -29,13 +31,10 @@ class SessionManager:
         return f'session:{session_id}'
 
 
-    async def create(self,
-                     session_id: str,
-                     user_id: str,
-                     ttl: int | None = None):
+    async def create(self, session_id: str, user_id: str, ttl: int | None = None):
         '''
-        Create a new session.
-        user_data must be JSON-serializable.
+        Create a new session in redis.
+        user_id must be JSON-serializable.
         '''
         # if ttl is not None, it is truthy so short circuit
         ttl = ttl or self.ttl
@@ -48,29 +47,28 @@ class SessionManager:
 
 
     async def get(self, session_id: str) -> dict | None:
-        '''Fetches session and refresh TTL.'''
+        '''
+        Decodes and returns user_id from redis.
+        '''
         key = self._key(session_id)
-        uid = await self.redis.get(key)
-        if uid is None:
+        user_id = await self.redis.get(key)
+        if user_id is None:
             return None
 
-        # sliding expiary: if exists, extend ttl
-        await self.redis.expire(key, self.ttl)
-
         # redis.asyncio returns bytes so decode
-        if isinstance(uid, bytes):
-            uid = uid.decode('utf-8')
+        if isinstance(user_id, bytes):
+            user_id = user_id.decode('utf-8')
+        return json.loads(user_id)
 
-        return json.loads(uid)
 
-
-    async def delete(self, session_id: str) -> bool:
+    async def heartbeat(self, session_id: str):
         '''
-        Deletes a session from redis.
-        Returns True if session existed and was deleted.
+        Extends session by self.ttl every heartbeat.
         '''
-        # returns nkeys deleted
-        nkeys = await self.redis.delete(self._key(session_id))
-        return nkeys > 0
+        key = self._key(session_id)
+        if await self.redis.exists(key):
+            await self.redis.expire(key, self.ttl)
+            return True
+        return False
 
 

@@ -25,8 +25,8 @@ class GameStateStore:
                     state: dict,
                     ttl: int):
         '''
-        Stores the game state in redis.
-        state must be JSON-serializable.
+        Stores the game state in redis; must be JSON-serializable.
+        ttl == seconds_til_next_reset()
         '''
         await self.redis.set(
                 self._key(game_id, user_id, epoch),
@@ -48,14 +48,4 @@ class GameStateStore:
             state = state.decode('utf-8')
 
         return json.loads(state)
-
-
-    async def delete(self, game_id: str, user_id: str, epoch: str) -> bool:
-        '''
-        Deletes game state from redis.
-        Returns True if existed and deleted.
-        '''
-        # returns nkeys deleted
-        nkeys = await self.redis.delete(self._key(game_id, user_id, epoch))
-        return nkeys > 0
 

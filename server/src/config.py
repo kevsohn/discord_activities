@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 # adjustable constants
 GAME_RESET_HOUR = 0   # midnight UTC
-SESSION_TTL = 60*10   # session lifetime in secs
+SESSION_TTL = 40      # lifetime in secs >= 2x heartbeat
 REQUEST_TIMEOUT = 10  # httpx client timeout in secs
 
 load_dotenv()  # exports .env
