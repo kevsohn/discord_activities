@@ -14,7 +14,6 @@ export class SessionController {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                session_id: this.auth.session_id,
                 user_id: this.auth.user.id,
             }),
         });
@@ -30,7 +29,7 @@ export class SessionController {
         this.heartbeat_timer = setInterval(() => {
             fetch("/api/session/heartbeat", {
                 method: "POST",
-                credentials: "include",
+                credentials: "include",  // send cookie for session_id
             }).catch(() => {
                 // silent: TTL handles failure
             });

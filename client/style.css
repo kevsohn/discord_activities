@@ -41,6 +41,37 @@ h1 {
   padding: 2rem;
   text-align: center;
 }
+.loading-bar-container {
+    width: 100%;
+    height: 6px;
+    background: #2f3136; /* Discord-dark style background */
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 10px;
+    position: relative;
+}
+
+.loading-bar {
+    width: 50%; /* width of the moving gradient */
+    height: 100%;
+    background: linear-gradient(90deg, #5865f2, #1ed760, #ff4d4d);
+    animation: move-bar 1.5s linear infinite;
+    border-radius: 3px;
+    position: absolute;
+    left: -50%;
+    box-shadow: 0 0 8px rgba(88,101,242,0.5);
+}
+
+/* continuous left-to-right motion */
+@keyframes move-bar {
+    0% {
+        left: -50%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
 
 .logo {
   height: 6em;
