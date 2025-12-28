@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
-from secrets import token_urlsafe
 from pydantic import BaseModel
 
-from ..config import SESSION_TTL, DISCORD_API_URL, CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
+from ..config import DISCORD_API_URL, CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 from ..depends.http import get_http_client
 from ..depends.sessions import get_session_manager
 from ..services.error import error
 
 router = APIRouter(prefix="/api/auth")
+
 
 # pydantic model: parses JSON from request body and handles errors
 class TokenRequest(BaseModel):
@@ -23,28 +23,11 @@ async def exchange_code(body: TokenRequest,
     Frontend sends Discord OAuth2 code.
     Backend:
      - exchanges code for access token
-     - fetches Discord user
-     - stores session in Redis
-     - sets HTTP-only session cookie
      - returns access token
     '''
     code = body.code
     access_token = await fetch_access_token(code, http)
-    user_info = await fetch_user_info(access_token, http)
-
-    session_id = token_urlsafe(32)  # 256-bit entropy
-    await sessions.create(session_id, user_info)
-
-    r = JSONResponse({'access_token': access_token})
-    r.set_cookie(
-        key='session_id',
-        value=session_id,
-        httponly=True,
-        secure=True,          # HTTPS
-        samesite='none',      # req for Activities iframe
-        max_age=sessions.ttl,
-    )
-    return r
+    return JSONResponse({'access_token': access_token})
 
 
 async def fetch_access_token(code: str, http) -> dict:
@@ -67,27 +50,4 @@ async def fetch_access_token(code: str, http) -> dict:
 
     data = r.json()  # access_t, token_type, expires_in, refresh_t, scope
     return data['access_token']
-
-
-async def fetch_user_info(access_token: str, http) -> dict:
-    """
-    Returns:
-    {
-        id: int
-        username: str
-        discriminator: int (differentiates users w/ same uname)
-        avatar:
-    }
-    """
-    headers = {"Authorization": f"Bearer {access_token}"}
-
-    r = await http.get(
-            f'{DISCORD_API_URL}/users/@me',
-            headers = headers,
-    )
-    if r.status_code != 200:
-        raise error(r.status_code, 'Invalid Discord token')
-
-    return r.json()
-
 

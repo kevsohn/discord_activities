@@ -28,8 +28,7 @@ async def start(game_id: str,
     '''
     session = await sessions.get(session_id)
 
-    # key must match fetch_user_info() in api/auth.py
-    user_id = session['id']  # want KeyError
+    user_id = session['user_id']  # want KeyError
     if user_id is None:
         raise error(401, 'Session expired')
 
@@ -60,8 +59,7 @@ async def update(game_id: str,
     '''
     session = await sessions.get(session_id)
 
-    # key must match fetch_user_info() in api/auth.py
-    user_id = session['id']  # want KeyError
+    user_id = session['user_id']  # want KeyError
     if user_id is None:
         raise error(401, 'Session expired')
 
@@ -96,7 +94,7 @@ async def house_turn(game_id: str,
     '''
     session = await sessions.get(session_id)
 
-    user_id = session['id']
+    user_id = session['user_id']  # want KeyError
     if user_id is None:
         raise error(401, 'Session expired')
 

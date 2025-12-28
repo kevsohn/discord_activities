@@ -11,6 +11,7 @@ from server.src.depends.engine_reg import init_game_engine
 from server.src.db.models.stats import Base
 
 from server.src.api.auth import router as auth_router
+from server.src.api.session import router as session_router
 from server.src.api.games import router as games_router
 from server.src.api.stats import router as stats_router
 
@@ -76,6 +77,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(session_router)
 app.include_router(games_router)
 app.include_router(stats_router)
 

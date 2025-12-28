@@ -31,7 +31,7 @@ class SessionManager:
 
     async def create(self,
                      session_id: str,
-                     user_data: dict,
+                     user_id: str,
                      ttl: int | None = None):
         '''
         Create a new session.
@@ -42,7 +42,7 @@ class SessionManager:
 
         await self.redis.set(
                 self._key(session_id),
-                json.dumps(user_data),
+                json.dumps({'user_id': user_id}),
                 ex=ttl
         )
 
@@ -50,18 +50,18 @@ class SessionManager:
     async def get(self, session_id: str) -> dict | None:
         '''Fetches session and refresh TTL.'''
         key = self._key(session_id)
-        data = await self.redis.get(key)
-        if data is None:
+        uid = await self.redis.get(key)
+        if uid is None:
             return None
 
         # sliding expiary: if exists, extend ttl
         await self.redis.expire(key, self.ttl)
 
         # redis.asyncio returns bytes so decode
-        if isinstance(data, bytes):
-            data = data.decode('utf-8')
+        if isinstance(uid, bytes):
+            uid = uid.decode('utf-8')
 
-        return json.loads(data)
+        return json.loads(uid)
 
 
     async def delete(self, session_id: str) -> bool:
