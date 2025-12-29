@@ -3,8 +3,8 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_streak_incr(game_id, redis_client):
-    from server.src.services.reset import get_current_epoch
-    from server.src.depends.streak import mark_played, incr_streak
+    from src.services.reset import get_current_epoch
+    from src.depends.streak import mark_played, incr_streak
 
     epoch = get_current_epoch()
     guard_key = f'game:{game_id}:played:{epoch}'
@@ -40,8 +40,8 @@ async def test_streak_incr(game_id, redis_client):
 
 @pytest.mark.asyncio
 async def test_streak_reset(game_id, redis_client):
-    from server.src.services.reset import get_current_epoch
-    from server.src.depends.streak import mark_played, incr_streak
+    from src.services.reset import get_current_epoch
+    from src.depends.streak import mark_played, incr_streak
 
     epoch = '2025-12-22'
     guard_key = f'game:{game_id}:played:{epoch}'
@@ -86,9 +86,9 @@ async def test_streak_reset(game_id, redis_client):
 
 @pytest.mark.asyncio
 async def test_stats_endpoint(game_id, client, redis_client, db_session_factory):
-    from server.src.services.reset import get_current_epoch
-    from server.src.services.leaderboard import rank_player
-    from server.src.services.save import save_stats_to_db
+    from src.services.reset import get_current_epoch
+    from src.services.leaderboard import rank_player
+    from src.services.save import save_stats_to_db
 
     # create mock live leaderboard
     epoch = get_current_epoch()

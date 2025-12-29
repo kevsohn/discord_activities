@@ -1,0 +1,12 @@
+{
+  "current_game": "chess_puzzle",
+  "games": {
+    "chess_puzzle": {
+      "rank_order": "asc"
+    },
+    "minesweeper": {
+      "rank_order": "desc"
+    }
+  }
+}
+

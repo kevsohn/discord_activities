@@ -6,11 +6,12 @@ from httpx import AsyncClient, ASGITransport
 from fakeredis import FakeAsyncRedis
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
-from server.src.main import app
-from server.src.db.models.stats import Base
-from server.src.depends.db_session import get_db_session
-from server.src.depends.redis import get_redis
-from server.src.depends.http import get_http_client
+from src.main import app
+from src.db.models.stats import Base
+from src.depends.db_session import get_db_session
+from src.depends.redis import get_redis
+from src.depends.http import get_http_client
+
 
 pytestmark = pytest.mark.anyio(backend="asyncio")
 
@@ -30,13 +31,12 @@ def event_loop():
 @pytest_asyncio.fixture
 async def db_engine():
     engine = create_async_engine(
-        "postgresql+asyncpg://test:test@localhost:5432/test_db",
+        "postgresql+asyncpg://test:test123@localhost:5432/test_db",
         echo=False,
     )
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield engine
-    #await engine.dispose()
 
 
 @pytest_asyncio.fixture
@@ -49,14 +49,12 @@ async def db_session_factory(db_engine):
 async def redis_client():
     redis = FakeAsyncRedis()
     yield redis
-    #await redis.aclose()
 
 
 @pytest_asyncio.fixture
 async def http_client():
     http_client = AsyncClient(timeout=10)
     yield http_client
-    #await http_client.aclose()
 
 
 @pytest_asyncio.fixture

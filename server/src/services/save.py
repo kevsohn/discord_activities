@@ -3,9 +3,9 @@ import redis.asyncio as Redis
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.dialects.postgresql import insert
 
-from shared.game_reg import GAMES
-from ..db.models.stats import Stats
+from ..config import GAMES
 from .error import error
+from ..db.models.stats import Stats
 from ..depends.streak import incr_streak
 
 

@@ -7,7 +7,7 @@ async def test_game_start(game_id, client, redis_client):
 
     # mock session manager
     session_id = "testsession123"
-    user_info = {'id': "user1"}
+    user_info = {'user_id': "user1"}
     await redis_client.set(f"session:{session_id}", json.dumps(user_info))
 
     r = await client.get(f"/games/{game_id}/start",
@@ -29,7 +29,7 @@ async def test_game_update(game_id, client, redis_client):
     import chess
 
     session_id = "testsession456"
-    user_info = {'id': "user2"}
+    user_info = {'user_id': "user2"}
     await redis_client.set(f"session:{session_id}", json.dumps(user_info))
 
     # start chess game to initialize state
@@ -70,7 +70,7 @@ async def test_house_turn(game_id, client, redis_client):
     import chess
 
     session_id = "testsession456"
-    user_info = {'id': "user2"}
+    user_info = {'user_id': "user2"}
     await redis_client.set(f"session:{session_id}", json.dumps(user_info))
 
     # start chess game to initialize state

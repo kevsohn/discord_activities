@@ -14,6 +14,7 @@ from ..engines.chess_puzzle import ChessPuzzleEngine
 from ..engines.minesweeper import MinesweeperEngine
 from ..providers.lichess import fetch_daily_puzzle
 
+
 ENGINES = {
     'chess_puzzle': {
         'engine': ChessPuzzleEngine,

@@ -1,6 +1,5 @@
 export class SessionController {
-    constructor({ discordSdk, auth }) {
-        this.discordSdk = discordSdk;
+    constructor(auth) {
         this.auth = auth;
         this.heartbeat_timer = null;
     }
@@ -23,7 +22,7 @@ export class SessionController {
 		}
     }
 
-	start_heartbeat(interval_ms = 20_000) {  // 20 secs
+	start_heartbeat(interval_ms = 30_000) {  // 20 secs
         if (this.heartbeat_timer) return;
 
         this.heartbeat_timer = setInterval(() => {
