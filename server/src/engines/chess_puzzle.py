@@ -73,7 +73,7 @@ class ChessPuzzleEngine(GameEngine):
             "score": 0,  # no. wrong tries (i.e. 0/max_turn == best)
             "gameover": False,
             "rating": self.rating,
-            "start_colour": start_colour,
+            "start_colour": 'white' if start_colour == 'w' else 'black',
         }
 
 
@@ -84,7 +84,7 @@ class ChessPuzzleEngine(GameEngine):
         board = chess.Board(state['fen'])
 
         # if illegal move, return given state
-        move = chess.Move.from_uci(action['uci'])  # chess.Move!!!
+        move = chess.Move.from_uci(action['move'])  # chess.Move!!!
         if move not in board.legal_moves:
             return {**state, 'illegal': True}
 
@@ -95,7 +95,8 @@ class ChessPuzzleEngine(GameEngine):
                 "fen": board.fen(),
                 "ply": ply,
                 "score": state['score'] + 1,
-                "gameover": False
+                "gameover": False,
+                "wrong": True,
             }
 
         # correct; set up opponent's turn
@@ -117,14 +118,17 @@ class ChessPuzzleEngine(GameEngine):
             return state
 
         ply = state['ply']
+        move = self.solution[ply]  # UCI!!!
+
         board = chess.Board(state['fen'])
-        board.push_uci(self.solution[ply])  # UCI!!!
+        board.push_uci(move)
 
         return {
             'fen': board.fen(),
             'ply': ply + 1,
             'score': state['score'],
             'gameover': state['gameover'],
+            'move': move
         }
 
 

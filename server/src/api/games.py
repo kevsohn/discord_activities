@@ -111,7 +111,8 @@ async def house_turn(game_id: str,
 
 
 # session_id gated
-@router.post("/{game_id}/gameover")
-async def gameover(session_id=Depends(get_session_id)):
-    pass
+@router.get("/{game_id}/gameover")
+async def gameover(game_id: str,
+                   session_id=Depends(get_session_id)) -> dict:
+    return {'ok': True}
 

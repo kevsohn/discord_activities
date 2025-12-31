@@ -42,7 +42,7 @@ async def test_game_update(game_id, client, redis_client):
     move = 'e6d5'
     payload = {
         'state': init_state,
-        'action': {"uci": move}
+        'action': {'move': move}
     }
 
     r = await client.post(f"/games/{game_id}/update",
@@ -93,8 +93,10 @@ async def test_house_turn(game_id, client, redis_client):
     state = r.json()
 
     # expected opp move
-    board.push_uci('c2c8')
+    house_move = 'c2c8'
+    board.push_uci(house_move)
 
+    assert state['move'] == house_move
     assert state['fen'] == board.fen()
     assert state['ply'] == 2
     assert state['score'] == 0

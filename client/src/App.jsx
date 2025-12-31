@@ -2,11 +2,13 @@ import { DiscordSDK } from "@discord/embedded-app-sdk";
 import { useState, useEffect } from "react";
 
 import { auth_user } from "./services/auth";
-import { SessionController } from "./services/sessions";
+import SessionController from "./services/sessions";
+import { api_client } from './services/api_client';
+import LoadingScreen from "./loading_screen";
 
-import { GAME_ID } from './services/game_config';
-import { ChessPuzzle } from './games/chess_puzzle';
-//import { Minesweeper } from './games/minesweeper';
+import { GAME_ID } from './games/config';
+import ChessPuzzle from './games/chess_puzzle';  // imports index.jsx
+//import Minesweeper from './games/minesweeper';
 
 
 const GAMES = {
@@ -49,30 +51,23 @@ export default function App() {
 
 
   // UI
-  if (status === "loading") {
-    return (
-	  <div>
-		<h2>Loading the best game ever...</h2>
-		<div className="loading-bar-container">
-		  <div className="loading-bar"></div>
-		</div>
-	  </div>
-    );
-  }
-
   if (status === "error") {
     return <h1>Authentication Failed ❌</h1>;
+  }
+
+  if (status == "loading") {
+    return <LoadingScreen/>;
   }
 
   // authenticated
   return (
     <>
-	  {Object.entries(GAMES).map(([game_id, UI]) => (
+	  {Object.entries(GAMES).map(([game_id, Game]) => (
         <div
-          key={game_id}
+		  key={game_id}
           style={{ display: GAME_ID === game_id ? "block" : "none" }}
         >
-          <UI active={GAME_ID === game_id} user={user} />
+          <Game api_client={api_client} />
         </div>
       ))}
     </>

@@ -18,6 +18,12 @@ export default defineConfig({
 				secure: false,
 				ws: true,
 			},
+			'/games': {
+				target: 'http://localhost:8000',
+				changeOrigin: true,
+				secure: false,
+				ws: true,
+			},
 		},
 
 		hmr: {

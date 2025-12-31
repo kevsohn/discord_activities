@@ -1,4 +1,4 @@
-export class SessionController {
+export default class SessionController {
     constructor(auth) {
         this.auth = auth;
         this.heartbeat_timer = null;
