@@ -97,7 +97,7 @@ async def test_house_turn(game_id, client, redis_client):
     assert r.status_code == 200
     state = r.json()
 
-    assert state['move'] == house_move
+    assert state['house_move'] == house_move
     assert state['fen'] == board.fen()
     assert state['ply'] == 2
     assert state['score'] == 0

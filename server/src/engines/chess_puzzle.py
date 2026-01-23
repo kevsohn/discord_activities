@@ -67,10 +67,10 @@ class ChessPuzzleEngine(GameEngine):
 
         return {
             "fen": self.start_fen,
+            "rating": self.rating,
             "ply": 0,    # no. half moves
             "score": 0,  # no. wrong tries (i.e. 0/max_turn == best)
             "gameover": False,
-            "rating": self.rating,
             "start_colour": 'white' if start_colour == 'w' else 'black',
         }
 
@@ -91,6 +91,7 @@ class ChessPuzzleEngine(GameEngine):
         if ply >= len(self.solution) or move.uci() != self.solution[ply]:
             return {
                 "fen": board.fen(),
+                "rating": self.rating,
                 "ply": ply,
                 "score": state['score'] + 1,
                 "gameover": False,
@@ -105,6 +106,7 @@ class ChessPuzzleEngine(GameEngine):
         gameover = ply >= len(self.solution)
         return {
             "fen": board.fen(),
+            "rating": self.rating,
             "ply": ply,
             "score": state['score'],
             "gameover": gameover
@@ -123,10 +125,11 @@ class ChessPuzzleEngine(GameEngine):
 
         return {
             'fen': board.fen(),
+            "rating": self.rating,
             'ply': ply + 1,
             'score': state['score'],
             'gameover': state['gameover'],
-            'move': move
+            'house_move': move
         }
 
 
