@@ -67,6 +67,7 @@ class ChessPuzzleEngine(GameEngine):
 
     def init_state(self) -> dict:
         start_colour = self.start_fen.split()[1]  # <FEN> <active_color> ...
+        print(self.solution)
         return {
             "fen": self.start_fen,
             "ply": 0,  # no. moves (incl opp)

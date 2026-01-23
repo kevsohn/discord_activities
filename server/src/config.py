@@ -3,12 +3,10 @@ from dotenv import load_dotenv
 from pathlib import Path
 import json
 
-
 # adjustable constants
 GAME_RESET_HOUR = 0   # midnight UTC
 SESSION_TTL = 60      # lifetime in secs >= 2x heartbeat
 REQUEST_TIMEOUT = 10  # httpx client timeout in secs
-
 
 # grab game specs
 fpath = Path(__file__).resolve().parents[2] / "shared" / "game_reg.json"
@@ -17,9 +15,10 @@ with open(fpath, 'r') as f:
 
 GAMES = specs['games']
 
-
 # export .env vars
 load_dotenv()
+
+LICHESS_SECRET = environ.get('LICHESS_SECRET')
 
 # discord dev stuff
 DISCORD_API_URL = "https://discord.com/api/v10"

@@ -8,9 +8,10 @@ from secrets import token_urlsafe
 
 from ..depends.sessions import get_session_manager, get_session_id
 from ..services.reset import seconds_til_next_reset
+from ..services.error import error
+
 
 router = APIRouter(prefix="/api/session")
-
 
 # pydantic model: parses JSON from request body and handles errors
 class CreateRequest(BaseModel):

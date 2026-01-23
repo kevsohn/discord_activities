@@ -1,10 +1,15 @@
 '''
 Data provider for ChessPuzzleEngine.
 '''
-from ..services.error import error
+import chess
+import chess.pgn
+import io
 
-API_URL = 'https://chess-puzzles.p.rapidapi.com/'
-RATING = 1500
+from ..services.error import error
+from ..config import LICHESS_SECRET
+
+
+API_URL = "https://lichess.org/api/puzzle/daily"
 
 
 # http_client is currently httpx.AsyncClient but can be swapped
@@ -12,34 +17,48 @@ async def fetch_daily_puzzle(http_client) -> dict:
     '''
     Returns the lichess daily puzzle.
     '''
-    headers = {
-        "x-rapidapi-key": "577e35e7c9msh9808fce86f3b4aap1adf59jsne16c3a46b8cf",
-        "x-rapidapi-host": "chess-puzzles.p.rapidapi.com"
+    headers={
+        "Authorization": f"Bearer {LICHESS_SECRET}"
     }
-    params = {
-        #'rating': f'{RATING}',
-        #'count': '1',
-        'id': 'HxxIU',  # for testing
+    params={
+        "angle": "",
+        "difficulty": "normal",
+        "color": ""   # 50% w or b
     }
-
     r = await http_client.get(
-        API_URL,
-        headers=headers,
-        params=params
+        API_URL
+        #headers=headers,
+        #params=params
     )
+
     if r.status_code != 200:
         raise error(r.status_code, 'Failed to fetch daily chess puzzle')
     data = r.json()
 
-    puzzle = data['puzzles'][0]
-    '''
-    FEN is the position before the opponent makes their move.
-    The position to present to the player is after applying the first move
-    to that FEN. The second move is the beginning of the solution.
-    '''
+    # check lichess api docs
+    pgn = data['game']['pgn']
+    init_ply = data['puzzle']['initialPly']
+    rating = data['puzzle']['rating']
+    solution = data['puzzle']['solution']
+
+    fen = pgn_to_fen(pgn, init_ply)
+    print(fen, rating, solution)
     return {
-        'fen': puzzle['fen'],
-        'moves': puzzle['moves'],  # UCI
-        'rating': puzzle['rating']
+        'fen': fen,
+        'solution': solution,  # UCI
+        'rating': rating
     }
+
+
+def pgn_to_fen(pgn: str, init_ply: int) -> str:
+    pgn_obj = chess.pgn.read_game(io.StringIO(pgn))
+    board = pgn_obj.board()
+
+    # play moves up to init ply
+    # 1st move is ply 1
+    for ply, move in enumerate(pgn_obj.mainline_moves(), start=1):
+        board.push(move)
+        if ply == init_ply:
+            break
+    return board.fen()
 
