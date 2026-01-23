@@ -31,7 +31,7 @@ def event_loop():
 @pytest_asyncio.fixture
 async def db_engine():
     engine = create_async_engine(
-        "postgresql+asyncpg://test:test123@localhost:5432/test_db",
+        "postgresql+asyncpg://app:test123@localhost:5432/test_db",
         echo=False,
     )
     async with engine.begin() as conn:
