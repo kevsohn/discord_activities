@@ -1,6 +1,6 @@
-export async function auth_user(discord_sdk) {
+export async function authenticateUser(discordSdk) {
 	// get auth code from discord client
-	const { code } = await discord_sdk.commands.authorize({
+	const { code } = await discordSdk.commands.authorize({
 		client_id: import.meta.env.VITE_CLIENT_ID,
 		response_type: "code",
 		state: "",
@@ -21,7 +21,7 @@ export async function auth_user(discord_sdk) {
 	const { access_token } = await r.json();
 
 	// authenticate with access token
-	const auth = await discord_sdk.commands.authenticate({
+	const auth = await discordSdk.commands.authenticate({
 		access_token
 	});
 

@@ -1,10 +1,10 @@
-export default class SessionController {
+export default class SessionManager {
     constructor(auth) {
         this.auth = auth;
-        this.heartbeat_timer = null;
+        this.heartbeatTimer = null;
     }
 
-    async create_session() {
+    async createSession() {
         if (!this.auth?.user?.id) {
             throw new Error("Auth not ready");
         }
@@ -22,10 +22,10 @@ export default class SessionController {
 		}
     }
 
-	start_heartbeat(interval_ms = 30_000) {  // 20 secs
-        if (this.heartbeat_timer) return;
+	startHeartbeat(interval_ms = 30_000) {  // 20 secs
+        if (this.heartbeatTimer) return;
 
-        this.heartbeat_timer = setInterval(() => {
+        this.heartbeatTimer = setInterval(() => {
             fetch("/api/session/heartbeat", {
                 method: "POST",
                 credentials: "include",  // send cookie for session_id
@@ -36,8 +36,8 @@ export default class SessionController {
     }
 
     async start() {
-		await this.create_session();
-        this.start_heartbeat();
+		await this.createSession();
+        this.startHeartbeat();
     }
 }
 

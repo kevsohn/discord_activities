@@ -2,9 +2,15 @@
   "current_game": "chess_puzzle",
   "games": {
     "chess_puzzle": {
+	  "config": {
+	    "hasHouseTurn": true
+	  },
       "rank_order": "asc"
     },
     "minesweeper": {
+	  "config": {
+	    "hasHouseTurn": true
+	  },
       "rank_order": "desc"
     }
   }

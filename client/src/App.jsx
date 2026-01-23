@@ -1,76 +1,64 @@
 import { DiscordSDK } from "@discord/embedded-app-sdk";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
-import { auth_user } from "./services/auth";
-import SessionController from "./services/sessions";
-import { api_client } from './services/api_client';
-import LoadingScreen from "./loading_screen";
+import reg from '../../shared/game_reg.json'
+import { authenticateUser } from "./services/Auth";
+import SessionManager from "./services/SessionManager";
+import LoadingScreen from "./components/LoadingScreen";
 
-import { GAME_ID } from './games/config';
-import ChessPuzzle from './games/chess_puzzle';  // imports index.jsx
-//import Minesweeper from './games/minesweeper';
+import GameWrapper from "./components/GameWrapper";
+import ChessPuzzleRenderer from "./components/renderers/ChessPuzzle";
+//import MinesweeperRenderer from "./components/renderers/Minesweeper";
 
 
-const GAMES = {
-	chess_puzzle: ChessPuzzle,
-	//minesweeper: Minesweeper,
+const GAME_ID = reg.current_game;
+
+const UIs = {
+  chess_puzzle: ChessPuzzleRenderer,
+  //minesweeper: MinesweeperRenderer,
 };
 
-const discord_sdk = new DiscordSDK(import.meta.env.VITE_CLIENT_ID);
+const discordSdk = new DiscordSDK(import.meta.env.VITE_CLIENT_ID);
 
 
 export default function App() {
-  const [status, set_status] = useState("loading");  // loading | authenticated | error
-  const [user, set_user] = useState(null);
+  const [status, setStatus] = useState("loading");
 
-  // initial setup: Discord SDK, auth, session
   useEffect(() => {
     async function setup() {
       try {
-        await discord_sdk.ready();
-        console.log("Discord SDK ready");
+        await discordSdk.ready();
+		console.log('Discord SDK is ready');
 
-        const auth = await auth_user(discord_sdk);
-        set_user(auth.user);
+        const auth = await authenticateUser(discordSdk);
 		console.log('User authenticated');
-
-        const session = new SessionController(auth);
+        
+		const session = new SessionManager(auth);
         await session.start();
-		console.log('Session started succesfully');
-		
-		set_status('authenticated');
-      } 
-	  catch (err) {
-        console.error("Setup failed:", err);
-        set_status("error");
+		console.log('Session started');
+
+        setStatus("authenticated");
+      }catch (err) {
+        console.error(err);
+        setStatus("error");
       }
     }
 
     setup();
   }, []);
 
+  if (status === "loading") return <LoadingScreen />;
+  if (status === "error") return <h1>Authentication Failed ❌</h1>;
 
-  // UI
-  if (status === "error") {
-    return <h1>Authentication Failed ❌</h1>;
-  }
+  const config = reg.games[GAME_ID].config;
+  const renderer = UIs[GAME_ID];
 
-  if (status == "loading") {
-    return <LoadingScreen/>;
-  }
-
-  // authenticated
   return (
-    <>
-	  {Object.entries(GAMES).map(([game_id, Game]) => (
-        <div
-		  key={game_id}
-          style={{ display: GAME_ID === game_id ? "block" : "none" }}
-        >
-          <Game api_client={api_client} />
-        </div>
-      ))}
-    </>
+    <GameWrapper
+      gameId={GAME_ID}
+      GameRenderer={renderer}
+      gameConfig={config}
+    />
   );
-
 }
+
