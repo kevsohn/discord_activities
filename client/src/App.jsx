@@ -40,7 +40,7 @@ export default function App() {
         setStatus("authenticated");
       }catch (err) {
         console.error(err);
-        setStatus("error");
+		//setStatus("error");
       }
     }
 

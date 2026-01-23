@@ -23,6 +23,7 @@ export default function GameWrapper({ gameId, GameRenderer, gameConfig = {}, }) 
     start();
   }, [gameId]);
 
+
   // --- Send player action to backend ---
   async function dispatch(action) {
     if (!model || model.gameover || resetRequired) return;
@@ -51,6 +52,7 @@ export default function GameWrapper({ gameId, GameRenderer, gameConfig = {}, }) 
     }
   }
 
+
   // --- Reset UI if epoch conflict ---
   if (resetRequired) {
     return (
@@ -71,6 +73,7 @@ export default function GameWrapper({ gameId, GameRenderer, gameConfig = {}, }) 
       </div>
     );
   }
+
 
   if (!model) return null;
 
