@@ -26,7 +26,7 @@ async def fetch_daily_puzzle(http_client) -> dict:
         "color": ""   # 50% w or b
     }
     r = await http_client.get(
-        API_URL
+        API_URL,
         #headers=headers,
         #params=params
     )
@@ -42,7 +42,8 @@ async def fetch_daily_puzzle(http_client) -> dict:
     solution = data['puzzle']['solution']
 
     fen = pgn_to_fen(pgn, init_ply)
-    print(fen, rating, solution)
+    print(fen, solution, rating)
+
     return {
         'fen': fen,
         'solution': solution,  # UCI
@@ -51,14 +52,18 @@ async def fetch_daily_puzzle(http_client) -> dict:
 
 
 def pgn_to_fen(pgn: str, init_ply: int) -> str:
+    '''
+    convert Portable-Game -> Forsynth-Edwards
+    '''
     pgn_obj = chess.pgn.read_game(io.StringIO(pgn))
     board = pgn_obj.board()
 
     # play moves up to init ply
-    # 1st move is ply 1
-    for ply, move in enumerate(pgn_obj.mainline_moves(), start=1):
+    for ply, move in enumerate(pgn_obj.mainline_moves()):
         board.push(move)
         if ply == init_ply:
             break
+
     return board.fen()
+
 

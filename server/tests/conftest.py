@@ -59,12 +59,12 @@ async def http_client():
 
 @pytest_asyncio.fixture
 async def client(redis_client, db_engine, db_session_factory, http_client):
-    async with LifespanManager(app):
-        app.state.db_engine = db_engine
-        app.state.db_session_factory = db_session_factory
-        app.state.redis = redis_client
-        app.state.http = http_client
+    app.state.db_engine = db_engine
+    app.state.db_session_factory = db_session_factory
+    app.state.redis = redis_client
+    app.state.http = http_client
 
+    async with LifespanManager(app):
         async def _get_db_session():
             async with app.state.db_session_factory() as db_session:
                 yield db_session
@@ -81,7 +81,7 @@ async def client(redis_client, db_engine, db_session_factory, http_client):
     app.state.http = None
     app.state.redis = None
     app.state.db_session = None
-    app.state.db = None
+    app.state.db_engine = None
     app.dependency_overrides.clear()
 
 

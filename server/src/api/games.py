@@ -45,7 +45,6 @@ async def start(game_id: str,
     return state
 
 
-# session_id gated
 @router.post("/{game_id}/update")
 async def update(game_id: str,
                  payload: dict,
@@ -81,7 +80,7 @@ async def update(game_id: str,
     return state
 
 
-# session_id gated
+# optional
 @router.post("/{game_id}/house_turn")
 async def house_turn(game_id: str,
                      payload: dict,
@@ -108,11 +107,4 @@ async def house_turn(game_id: str,
     state = engine.play_house_turn(payload["state"])
     await states.store(game_id, user_id, epoch, state, ttl)
     return state
-
-
-# session_id gated
-@router.get("/{game_id}/gameover")
-async def gameover(game_id: str,
-                   session_id=Depends(get_session_id)) -> dict:
-    return {'ok': True}
 

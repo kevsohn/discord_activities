@@ -56,21 +56,18 @@ class ChessPuzzleEngine(GameEngine):
 
             # fetch new puzzle and init
             puzzle = await self._fetcher()
-            board = chess.Board(puzzle['fen'])
-            board.push_uci(puzzle['moves'][0])  # house turn
-
-            self.start_fen = board.fen()
-            self.solution = puzzle['moves'][1:]
+            self.start_fen = puzzle['fen']
+            self.solution = puzzle['solution']
             self.rating = puzzle['rating']
             return True
 
 
     def init_state(self) -> dict:
         start_colour = self.start_fen.split()[1]  # <FEN> <active_color> ...
-        print(self.solution)
+
         return {
             "fen": self.start_fen,
-            "ply": 0,  # no. moves (incl opp)
+            "ply": 0,    # no. half moves
             "score": 0,  # no. wrong tries (i.e. 0/max_turn == best)
             "gameover": False,
             "rating": self.rating,

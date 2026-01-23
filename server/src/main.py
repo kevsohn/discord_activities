@@ -5,7 +5,7 @@ import httpx
 import redis.asyncio as redis
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
-from src.config import GAMES, REQUEST_TIMEOUT, REDIS_HOST, REDIS_PORT, DB_URL
+from src.config import GAMES, REQUEST_TIMEOUT, REDIS_HOST, REDIS_PORT, DB_URL, b_TEST
 from src.depends.engine_reg import init_game_engine
 from src.db.models.stats import Base
 
@@ -19,30 +19,31 @@ from src.api.stats import router as stats_router
 async def lifespan(app: FastAPI):
     print('Server starting up...')
 
-    app.state.db_engine = create_async_engine(
-        DB_URL,
-        pool_pre_ping=True,  # pre-ping to check conn is alive
-        echo=False,  # dont echo all queries
-    )
-    async with app.state.db_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    print('DB tables created')
-    app.state.db_session_factory = async_sessionmaker(
-        app.state.db_engine,
-        expire_on_commit=False,  # persist conn after commit
-    )
-    print('DB startup: OK')
+    if not b_TEST:
+        app.state.db_engine = create_async_engine(
+            DB_URL,
+            pool_pre_ping=True,  # pre-ping to check conn is alive
+            echo=False,  # dont echo all queries
+        )
+        async with app.state.db_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        print('DB tables created')
+        app.state.db_session_factory = async_sessionmaker(
+            app.state.db_engine,
+            expire_on_commit=False,  # persist conn after commit
+        )
+        print('DB startup: OK')
 
-    app.state.redis = redis.Redis(
-        host=REDIS_HOST,
-        port=REDIS_PORT,
-        db=0,  # db number (0-16)
-        decode_responses=True,  # retrn strings instead of bytes
-    )
-    print('Redis startup: OK')
+        app.state.redis = redis.Redis(
+            host=REDIS_HOST,
+            port=REDIS_PORT,
+            db=0,  # db number (0-16)
+            decode_responses=True,  # retrn strings instead of bytes
+        )
+        print('Redis startup: OK')
 
-    app.state.http = httpx.AsyncClient(timeout=REQUEST_TIMEOUT)
-    print('HTTP client startup: OK')
+        app.state.http = httpx.AsyncClient(timeout=REQUEST_TIMEOUT)
+        print('HTTP client startup: OK')
 
     app.state.engines = {}
     for game_id in GAMES:

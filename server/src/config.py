@@ -3,6 +3,9 @@ from dotenv import load_dotenv
 from pathlib import Path
 import json
 
+# test flag
+b_TEST = True
+
 # adjustable constants
 GAME_RESET_HOUR = 0   # midnight UTC
 SESSION_TTL = 60      # lifetime in secs >= 2x heartbeat

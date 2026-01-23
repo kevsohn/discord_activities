@@ -39,11 +39,15 @@ async def test_game_update(game_id, client, redis_client):
     init_state = r.json()
 
     # make legal move
-    move = 'e6d5'
+    move = 'e2d4'
     payload = {
         'state': init_state,
         'action': {'move': move}
     }
+
+    # expected
+    board = chess.Board(init_state['fen'])
+    board.push_uci(move)
 
     r = await client.post(f"/games/{game_id}/update",
                           json=payload,
@@ -53,10 +57,6 @@ async def test_game_update(game_id, client, redis_client):
 
     if state.get('illegal'):
         print("Illegal move")
-
-    # expected
-    board = chess.Board(init_state['fen'])
-    board.push_uci(move)
 
     assert state['fen'] == board.fen()
     assert state['ply'] == 1
@@ -80,10 +80,15 @@ async def test_house_turn(game_id, client, redis_client):
     init_state = r.json()
 
     # mock update call
+    move = 'e2d4'
     board = chess.Board(init_state['fen'])
-    board.push_uci('e6d5')
+    board.push_uci(move)
     init_state['fen'] = board.fen()
     init_state['ply'] = 1
+
+    # expected opp move
+    house_move = 'b6d4'
+    board.push_uci(house_move)
 
     payload = {'state': init_state}
     r = await client.post(f"/games/{game_id}/house_turn",
@@ -91,10 +96,6 @@ async def test_house_turn(game_id, client, redis_client):
                           headers={"Cookie": f"session_id={session_id}"})
     assert r.status_code == 200
     state = r.json()
-
-    # expected opp move
-    house_move = 'c2c8'
-    board.push_uci(house_move)
 
     assert state['move'] == house_move
     assert state['fen'] == board.fen()
