@@ -10,6 +10,8 @@ from ..depends.game_states import get_state_store
 from ..depends.streak import mark_played
 from ..services.leaderboard import rank_player
 from ..services.reset import get_current_epoch, seconds_til_next_reset
+from ..services.error import error
+
 
 router = APIRouter(prefix="/games", tags=["games"])
 
