@@ -37,9 +37,10 @@ async def save_stats_to_db(game_id: str,
             leaderboard_key, 0, -1, withscores=True
         )
 
-    # to make output JSON-serializable bc redis returns b''
+    # decode_responses=True in redis settings so technically dont need to decode
     rankings_list = [
-        {'user_id': user_id.decode('utf-8'), 'score': int(score)}
+        {'user_id': user_id.decode('utf-8') if isinstance(user_id, bytes) else user_id,
+         'score': int(score)}
         for user_id, score in rankings
     ]
 
