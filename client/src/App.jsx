@@ -11,6 +11,7 @@ import ChessPuzzleRenderer from "./components/renderers/ChessPuzzle";
 //import MinesweeperRenderer from "./components/renderers/Minesweeper";
 
 
+const discordSdk = new DiscordSDK(import.meta.env.VITE_CLIENT_ID);
 const GAME_ID = reg.current_game;
 
 const UIs = {
@@ -18,11 +19,11 @@ const UIs = {
   //minesweeper: MinesweeperRenderer,
 };
 
-const discordSdk = new DiscordSDK(import.meta.env.VITE_CLIENT_ID);
-
 
 export default function App() {
   const [status, setStatus] = useState("loading");
+  const config = reg.games[GAME_ID].config;
+  const renderer = UIs[GAME_ID];
 
   useEffect(() => {
     async function setup() {
@@ -31,8 +32,6 @@ export default function App() {
 		console.log('Discord SDK is ready');
 
         const auth = await authenticateUser(discordSdk);
-		console.log('User authenticated');
-        
 		const session = new SessionManager(auth);
         await session.start();
 		console.log('Session started');
@@ -40,7 +39,6 @@ export default function App() {
         setStatus("authenticated");
       }catch (err) {
         console.error(err);
-		//setStatus("error");
       }
     }
 
@@ -48,10 +46,6 @@ export default function App() {
   }, []);
 
   if (status === "loading") return <LoadingScreen />;
-  if (status === "error") return <h1>Authentication Failed ❌</h1>;
-
-  const config = reg.games[GAME_ID].config;
-  const renderer = UIs[GAME_ID];
 
   return (
     <GameWrapper

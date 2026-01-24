@@ -50,7 +50,6 @@ project/
 │   └── src/
 │       ├── main.jsx                # App entry point
 │       ├── App.jsx                 # Auth + render game
-│       ├── config.js               # Get current game ID
 |       |
 │       ├── components/             # React components
 │       |   ├── LoadingScreen.jsx
