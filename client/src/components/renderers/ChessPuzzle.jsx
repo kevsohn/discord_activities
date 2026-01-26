@@ -6,19 +6,8 @@ const PIECES = {
   P: "♙", R: "♖", N: "♘", B: "♗", Q: "♕", K: "♔",
 };
 
-function fenToGrid(fen) {
-  const board = [];
-  fen.split(" ")[0].split("/").forEach(row => {
-    const squares = [];
-    for (const c of row) {
-      if (/\d/.test(c)) {
-        for (let i = 0; i < parseInt(c, 10); i++) squares.push(null);
-      } else squares.push(c);
-    }
-    board.push(squares);
-  });
-  return board;
-}
+const FILES = ["a","b","c","d","e","f","g","h"];
+const RANKS = [1,2,3,4,5,6,7,8];
 
 export default function ChessPuzzleRenderer({ model, dispatch, features = {} }) {
   const DEFAULT_FEATURES = {
@@ -28,81 +17,56 @@ export default function ChessPuzzleRenderer({ model, dispatch, features = {} }) 
   };
   const { showScore, showRating, highlightLegalMoves } = { ...DEFAULT_FEATURES, ...features };
 
-  const [selectedSquare, setSelectedSquare] = useState(null);
-  const [grid, setGrid] = useState(fenToGrid(model.fen));
-  const [flashSquares, setFlashSquares] = useState({}); // { e4: "red" | "green" }
-
-  const [lastAttemptedTarget, setLastAttemptedTarget] = useState(null);
-  const [lastMoveTarget, setLastMoveTarget] = useState(null);
-
+  const isBlackStart = model.piece === "b";
   const chess = useMemo(() => new Chess(model.fen), [model.fen]);
 
-  useEffect(() => {
-    setGrid(fenToGrid(model.fen));
-  }, [model.fen]);
+  const [selectedSquare, setSelectedSquare] = useState(null);
+  const [lastAttemptedTarget, setLastAttemptedTarget] = useState(null);
+  const [flashSquares, setFlashSquares] = useState({}); // { square: "red" | "green" }
 
-  const isBlackStart = model.start_colour?.toLowerCase() === "black";
-  const displayRows = useMemo(() => (isBlackStart ? [...grid].reverse() : grid), [grid, isBlackStart]);
-  const displayGrid = useMemo(() => (isBlackStart ? displayRows.map(r => [...r].reverse()) : displayRows), [displayRows, isBlackStart]);
-
-  const files = ["a","b","c","d","e","f","g","h"];
-  const ranks = [1,2,3,4,5,6,7,8];
-  const displayFiles = isBlackStart ? [...files].reverse() : files;
-  const displayRanks = isBlackStart ? ranks : [...ranks].reverse();
-
+  /* ---------------- LEGAL MOVES ---------------- */
   const legalTargets = useMemo(() => {
     if (!highlightLegalMoves || !selectedSquare) return [];
     return chess.moves({ square: selectedSquare, verbose: true }).map(m => m.to);
   }, [selectedSquare, chess, highlightLegalMoves]);
 
-  // Handle user clicks
-  function onSquareClick(file, rank) {
-    const square = String.fromCharCode(97 + file) + (8 - rank);
-    const pieceHere = displayGrid[rank][file];
+  /* ---------------- CLICK HANDLING ---------------- */
+  function onSquareClick(fileIdx, rankIdx) {
+    const square = FILES[fileIdx] + (rankIdx + 1);
+    const piece = chess.get(square);
 
     if (!selectedSquare) {
-      if (pieceHere !== null) setSelectedSquare(square);
+      if (piece) setSelectedSquare(square);
       return;
     }
 
-    if (selectedSquare === square) {
+    if (square === selectedSquare) {
       setSelectedSquare(null);
       return;
     }
 
-    // Track last attempted target for wrong flash
     setLastAttemptedTarget(square);
-
-    const uci = selectedSquare + square;
-    dispatch({ move: uci });
-
+    dispatch({ move: selectedSquare + square });
     setSelectedSquare(null);
   }
 
-  // Flash logic
+  /* ---------------- FLASH LOGIC ---------------- */
   useEffect(() => {
-    let flashSquare = null;
-    let color = null;
-
-    if (model.wrong && lastAttemptedTarget) {
-      flashSquare = lastAttemptedTarget;
-      color = "red";
-    } else if (!model.wrong && lastAttemptedTarget) {
-      flashSquare = lastAttemptedTarget;
-      color = "green";
-    }
-
-    if (flashSquare) {
-      setFlashSquares({ [flashSquare]: color });
-      const timer = setTimeout(() => setFlashSquares({}), 600);
-      return () => clearTimeout(timer);
-    }
+    if (!lastAttemptedTarget) return;
+    const color = model.wrong ? "#ff4d4f" : "#52c41a"; // red or green flash
+    setFlashSquares({ [lastAttemptedTarget]: color });
+    const t = setTimeout(() => setFlashSquares({}), 600);
+    return () => clearTimeout(t);
   }, [model.wrong, lastAttemptedTarget]);
+
+  /* ---------------- RENDER ORDER ---------------- */
+  const renderRanks = isBlackStart ? [...Array(8).keys()] : [...Array(8).keys()].reverse();
+  const renderFiles = isBlackStart ? [...Array(8).keys()].reverse() : [...Array(8).keys()];
 
   const cellSize = 60;
 
   return (
-    <div className="flex flex-col items-center gap-3" style={{ minHeight: "100vh", justifyContent: "center", position: "relative" }}>
+    <div className="flex flex-col items-center gap-3" style={{ minHeight: "100vh", justifyContent: "center" }}>
       <div
         style={{
           display: "grid",
@@ -112,69 +76,70 @@ export default function ChessPuzzleRenderer({ model, dispatch, features = {} }) 
           height: 500,
           border: "2px solid black",
           userSelect: "none",
-          position: "relative",
         }}
       >
+        {/* Top-left corner */}
         <div></div>
-        {displayFiles.map(f => (
-          <div key={f} style={{ display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold" }}>
-            {f.toUpperCase()}
+
+        {/* File labels */}
+        {renderFiles.map(fIdx => (
+          <div key={fIdx} style={{ display:"flex", alignItems:"center", justifyContent:"center", fontWeight:"bold" }}>
+            {FILES[fIdx].toUpperCase()}
           </div>
         ))}
 
-        {displayRanks.map((rank, rIdx) => (
-          <div key={rank} style={{ display: "contents" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold" }}>
-              {rank}
+        {/* Board squares */}
+        {renderRanks.map(rIdx => (
+          <div key={rIdx} style={{ display: "contents" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"center", fontWeight:"bold" }}>
+              {rIdx + 1}
             </div>
-            {displayGrid[rIdx].map((piece, file) => {
-              const square = String.fromCharCode(97 + file) + (8 - rIdx);
+
+            {renderFiles.map(fIdx => {
+              const square = FILES[fIdx] + (rIdx + 1);
+              const piece = chess.get(square);
+
               const isSelected = selectedSquare === square;
               const isLegal = legalTargets.includes(square);
-              const isLight = (rIdx + file) % 2 === 0;
-              const flashColor = flashSquares[square];
+              const isLight = (fIdx + rIdx) % 2 === 0;
+              const flash = flashSquares[square];
+
+              let pieceChar = null;
+              if (piece) pieceChar = piece.color === "w" ? piece.type.toUpperCase() : piece.type;
 
               return (
                 <div
                   key={square}
-                  onClick={() => onSquareClick(file, rIdx)}
+                  onClick={() => onSquareClick(fIdx, rIdx)}
                   style={{
                     width: cellSize,
                     height: cellSize,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: isSelected
-                      ? "orange"
-                      : isLegal
-                        ? "rgba(0,255,0,0.2)"
-                        : isLight
-                          ? "#f0d9b5"
-                          : "#b58863",
+                    backgroundColor: flash
+                      ? flash
+                      : isSelected
+                        ? "orange"
+                        : isLegal
+                          ? "rgba(0,255,0,0.25)"
+                          : isLight ? "#f0d9b5" : "#b58863", // Lichess colors
                     fontSize: 36,
                     cursor: piece ? "pointer" : "default",
-                    color: piece ? (piece === piece.toUpperCase() ? "#fff" : "#000") : undefined,
-                    textShadow: piece ? "0 0 3px rgba(0,0,0,0.7)" : undefined,
+                    color: piece
+                      ? piece.color === "w"
+                        ? "#fff"
+                        : "#000"
+                      : undefined,
+                    textShadow: piece
+                      ? piece.color === "w"
+                        ? "0 0 2px #000, 0 0 4px #000"
+                        : "0 0 2px #fff"
+                      : undefined,
                     transition: "background-color 0.3s",
-                    position: "relative",
                   }}
                 >
-                  {piece && PIECES[piece]}
-
-                  {/* Flash overlay */}
-                  {flashColor && (
-                    <div style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      height: "100%",
-                      backgroundColor: flashColor,
-                      opacity: 0.5,
-                      pointerEvents: "none",
-                      zIndex: 1,
-                    }} />
-                  )}
+                  {pieceChar && PIECES[pieceChar]}
                 </div>
               );
             })}
@@ -182,9 +147,10 @@ export default function ChessPuzzleRenderer({ model, dispatch, features = {} }) 
         ))}
       </div>
 
-      <div className="text-sm space-y-1">
-        {showScore && <div>Tries: {model.score}</div>}
+      {/* Info panel centered */}
+      <div className="text-sm space-y-1" style={{ display: "flex", justifyContent: "center", gap: 16 }}>
         {showRating && model.rating && <div>Rating: {model.rating}</div>}
+        {showScore && <div>Mistakes: {model.score}</div>}
       </div>
 
       {model.gameover && <div className="font-bold text-green-600">Puzzle Complete!</div>}

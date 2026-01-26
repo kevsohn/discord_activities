@@ -9,6 +9,8 @@ from ..services.error import error
 from ..config import LICHESS_SECRET
 
 
+#API_URL = "https://lichess.org/api/puzzle/next"
+#API_URL = "https://lichess.org/api/puzzle/00sJ9"
 API_URL = "https://lichess.org/api/puzzle/daily"
 
 

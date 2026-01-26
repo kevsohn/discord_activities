@@ -82,18 +82,29 @@ class ChessPuzzleEngine(GameEngine):
         board = chess.Board(state['fen'])
 
         # if illegal move, return given state
+        # cant do **state cuz it might contain one of the flags
         move = chess.Move.from_uci(action['move'])  # chess.Move!!!
         if move not in board.legal_moves:
-            return {**state, 'illegal': True}
+            return {
+                "piece": self.piece,
+                "rating": self.rating,
+                "fen": board.fen(),
+                "ply": state['ply'],
+                "score": state['score'],
+                "gameover": False,
+                'illegal': True
+            }
 
-        # if wrong move, score++ and return state to try again
+        # if wrong move, score++
         ply = state['ply']
         if ply >= len(self.solution) or move.uci() != self.solution[ply]:
             return {
-                **state,
+                "piece": self.piece,
+                "rating": self.rating,
                 "fen": board.fen(),
                 "ply": ply,
                 "score": state['score'] + 1,
+                "gameover": False,
                 "wrong": True
             }
 
@@ -104,14 +115,17 @@ class ChessPuzzleEngine(GameEngine):
         # check if last move
         gameover = ply >= len(self.solution)
         return {
-            **state,
+            "piece": self.piece,
+            "rating": self.rating,
             "fen": board.fen(),
             "ply": ply,
+            "score": state['score'],
             "gameover": gameover
         }
 
 
     def play_house_turn(self, state: dict):
+        # player turn always last
         if state['gameover']:
             return state
 
@@ -122,9 +136,12 @@ class ChessPuzzleEngine(GameEngine):
         board.push_uci(move)
 
         return {
-            **state,
+            'piece': self.piece,
+            'rating': self.rating,
             'fen': board.fen(),
             'ply': ply + 1,
+            'score': state['score'],
+            'gameover': False,
             'house_move': move
         }
 
