@@ -25,8 +25,9 @@ class ChessPuzzleEngine(GameEngine):
         super().__init__(game_id, redis, db_session)
         self._fetcher = fetcher   # = lambda: provider(http)
         self.start_fen: str | None = None
-        self.solution: list[str] | None = None
+        self.piece: str | None = None
         self.rating: int | None = None
+        self.solution: list[str] | None = None
 
 
     async def ensure_reset(self, cur_epoch: str) -> bool:
@@ -57,21 +58,20 @@ class ChessPuzzleEngine(GameEngine):
             # fetch new puzzle and init
             puzzle = await self._fetcher()
             self.start_fen = puzzle['fen']
-            self.solution = puzzle['solution']
+            self.piece = puzzle['fen'].split()[1]  # 'w' or 'b'
             self.rating = puzzle['rating']
+            self.solution = puzzle['solution']
             return True
 
 
     def init_state(self) -> dict:
-        start_colour = self.start_fen.split()[1]  # <FEN> <active_color> ...
-
         return {
-            "fen": self.start_fen,
+            "piece": self.piece,
             "rating": self.rating,
+            "fen": self.start_fen,
             "ply": 0,    # no. half moves
             "score": 0,  # no. wrong tries (i.e. 0/max_turn == best)
-            "gameover": False,
-            "start_colour": 'white' if start_colour == 'w' else 'black',
+            "gameover": False
         }
 
 
@@ -90,12 +90,11 @@ class ChessPuzzleEngine(GameEngine):
         ply = state['ply']
         if ply >= len(self.solution) or move.uci() != self.solution[ply]:
             return {
+                **state,
                 "fen": board.fen(),
-                "rating": self.rating,
                 "ply": ply,
                 "score": state['score'] + 1,
-                "gameover": False,
-                "wrong": True,
+                "wrong": True
             }
 
         # correct; set up opponent's turn
@@ -105,10 +104,9 @@ class ChessPuzzleEngine(GameEngine):
         # check if last move
         gameover = ply >= len(self.solution)
         return {
+            **state,
             "fen": board.fen(),
-            "rating": self.rating,
             "ply": ply,
-            "score": state['score'],
             "gameover": gameover
         }
 
@@ -124,11 +122,9 @@ class ChessPuzzleEngine(GameEngine):
         board.push_uci(move)
 
         return {
+            **state,
             'fen': board.fen(),
-            "rating": self.rating,
             'ply': ply + 1,
-            'score': state['score'],
-            'gameover': state['gameover'],
             'house_move': move
         }
 

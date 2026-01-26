@@ -15,8 +15,8 @@ async def test_game_start(game_id, client, redis_client):
     assert r.status_code == 200
     state = r.json()
 
+    assert 'piece' in state
     assert 'rating' in state
-    assert 'start_colour' in state
     assert 'fen' in state
     assert state['ply'] == 0
     assert state['score'] == 0
@@ -39,7 +39,7 @@ async def test_game_update(game_id, client, redis_client):
     init_state = r.json()
 
     # make legal move
-    move = 'e2d4'
+    move = 'e3e4'
     payload = {
         'state': init_state,
         'action': {'move': move}
@@ -80,14 +80,14 @@ async def test_house_turn(game_id, client, redis_client):
     init_state = r.json()
 
     # mock update call
-    move = 'e2d4'
+    move = 'e3e4'
     board = chess.Board(init_state['fen'])
     board.push_uci(move)
     init_state['fen'] = board.fen()
     init_state['ply'] = 1
 
     # expected opp move
-    house_move = 'b6d4'
+    house_move = 'f5e4'
     board.push_uci(house_move)
 
     payload = {'state': init_state}
