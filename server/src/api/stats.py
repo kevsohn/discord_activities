@@ -30,6 +30,6 @@ async def daily_stats(game_id: str,
         return {
             'date': stats.date.date(),
             'rankings': stats.rankings,
-            'max_score': stats.max_score,
+            'outof': stats.outof,
             'streak': stats.streak,
         }

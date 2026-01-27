@@ -53,8 +53,11 @@ class GameEngine(ABC):
 
 
     @abstractmethod
-    def get_max_turn(self) -> int:
-        '''Returns max turn for display and ranking purposes'''
+    def get_outof_metric(self) -> int:
+        '''
+        Returns the denominator for score rankings.
+        i.e. X score / N
+        '''
         pass
 
 

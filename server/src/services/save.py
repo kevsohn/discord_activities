@@ -12,7 +12,7 @@ from ..depends.streak import incr_streak
 # called by GameEngine().ensure_reset()
 async def save_stats_to_db(game_id: str,
                            prev_epoch: str,
-                           max_score: int,
+                           outof: int,
                            redis: Redis,
                            db_session_factory: async_sessionmaker):
     '''
@@ -48,7 +48,7 @@ async def save_stats_to_db(game_id: str,
         game_id=game_id,
         date=epoch_to_datetime(prev_epoch),
         rankings=rankings_list,
-        max_score=max_score,
+        outof=outof,
         streak=int(streak) if streak else 0
     )
 
@@ -58,14 +58,14 @@ async def save_stats_to_db(game_id: str,
                 game_id=game_id,
                 date=epoch_to_datetime(prev_epoch),
                 rankings=rankings_list,
-                max_score=max_score,
+                outof=outof,
                 streak=int(streak) if streak else 0,
             ).on_conflict_do_update(
                 index_elements=[Stats.game_id],
                 set_={
                     "date": epoch_to_datetime(prev_epoch),
                     "rankings": rankings_list,
-                    "max_score": max_score,
+                    "outof": outof,
                     "streak": int(streak) if streak else 0,
                 },
             )

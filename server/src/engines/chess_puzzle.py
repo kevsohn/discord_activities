@@ -49,7 +49,7 @@ class ChessPuzzleEngine(GameEngine):
             if prev_epoch is not None:
                 await save_stats_to_db(self._game_id,
                                        prev_epoch,
-                                       self.get_max_turn(),
+                                       self.get_outof_metric(),
                                        self._redis,
                                        self._db_session_factory)
             # after b/c if persist fails, stats are not lost
@@ -69,8 +69,8 @@ class ChessPuzzleEngine(GameEngine):
             "piece": self.piece,
             "rating": self.rating,
             "fen": self.start_fen,
-            "ply": 0,    # no. half moves
-            "score": 0,  # no. wrong tries (i.e. 0/max_turn == best)
+            "ply": 0,    # no. half turns
+            "score": 0,  # (ncorrect-nwrong) outof total nturns
             "gameover": False
         }
 
@@ -146,7 +146,10 @@ class ChessPuzzleEngine(GameEngine):
         }
 
 
-    def get_max_turn(self) -> int:
+    def get_outof_metric(self) -> int:
+        '''
+        X score / total nturns
+        '''
         if self.solution is None:
             raise RuntimeError('Engine not initialized')
         return ceil(len(self.solution)/2)
