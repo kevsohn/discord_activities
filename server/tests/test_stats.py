@@ -100,7 +100,7 @@ async def test_stats_endpoint(game_id, client, redis_client, db_session_factory)
     await save_stats_to_db(
         game_id=game_id,
         prev_epoch=epoch,
-        max_score=5,
+        outof=5,
         redis=redis_client,
         db_session_factory=db_session_factory,
     )
@@ -118,7 +118,7 @@ async def test_stats_endpoint(game_id, client, redis_client, db_session_factory)
     stats = r.json()  # date, rankings, max_score, streak
     assert stats['date'] == epoch
     assert stats['rankings'] == expected_order
-    assert stats['max_score'] == 5
+    assert stats['outof'] == 5
     assert stats['streak'] == 0  # not 1 bc haven't mark_played, so no played key
 
 
