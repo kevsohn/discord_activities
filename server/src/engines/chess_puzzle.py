@@ -95,7 +95,7 @@ class ChessPuzzleEngine(GameEngine):
                 'illegal': True
             }
 
-        # if wrong move, score++
+        # if wrong move, score--
         ply = state['ply']
         if ply >= len(self.solution) or move.uci() != self.solution[ply]:
             return {
@@ -103,12 +103,12 @@ class ChessPuzzleEngine(GameEngine):
                 "rating": self.rating,
                 "fen": board.fen(),
                 "ply": ply,
-                "score": state['score'] + 1,
+                "score": state['score'] - 1,
                 "gameover": False,
                 "wrong": True
             }
 
-        # correct; set up opponent's turn
+        # correct; score++ and set up opponent's turn
         board.push(move)
         ply += 1
 
@@ -119,7 +119,7 @@ class ChessPuzzleEngine(GameEngine):
             "rating": self.rating,
             "fen": board.fen(),
             "ply": ply,
-            "score": state['score'],
+            "score": state['score'] + 1,
             "gameover": gameover
         }
 

@@ -1,6 +1,5 @@
 import pytest
 
-
 @pytest.mark.asyncio
 async def test_game_start(game_id, client, redis_client):
     import json
@@ -60,7 +59,7 @@ async def test_game_update(game_id, client, redis_client):
 
     assert state['fen'] == board.fen()
     assert state['ply'] == 1
-    assert state['score'] == 0
+    assert state['score'] == 1
     assert state['gameover'] == False
 
 
@@ -70,7 +69,7 @@ async def test_house_turn(game_id, client, redis_client):
     import chess
 
     session_id = "testsession456"
-    user_info = {'user_id': "user2"}
+    user_info = {'user_id': "user3"}
     await redis_client.set(f"session:{session_id}", json.dumps(user_info))
 
     # start chess game to initialize state
@@ -85,6 +84,7 @@ async def test_house_turn(game_id, client, redis_client):
     board.push_uci(move)
     init_state['fen'] = board.fen()
     init_state['ply'] = 1
+    init_state['score'] = 1
 
     # expected opp move
     house_move = 'g1h2'
@@ -100,6 +100,61 @@ async def test_house_turn(game_id, client, redis_client):
     assert state['house_move'] == house_move
     assert state['fen'] == board.fen()
     assert state['ply'] == 2
+    assert state['score'] == 1
+    assert state['gameover'] == False
+
+
+@pytest.mark.asyncio
+async def test_wrong_move(game_id, client, redis_client):
+    import json
+    import chess
+
+    session_id = "testsession456"
+    user_info = {'user_id': "user4"}
+    await redis_client.set(f"session:{session_id}", json.dumps(user_info))
+
+    # start chess game to initialize state
+    r = await client.get(f"/games/{game_id}/start",
+                         headers={"Cookie": f"session_id={session_id}"})
+    assert r.status_code == 200
+    init_state = r.json()
+
+    # mock update call
+    move = 'e8e1'
+    board = chess.Board(init_state['fen'])
+    board.push_uci(move)
+    init_state['fen'] = board.fen()
+    init_state['ply'] = 1
+    init_state['score'] = 1
+
+    # mock house turn
+    house_move = 'g1h2'
+    board.push_uci(house_move)
+    init_state['fen'] = board.fen()
+    init_state['ply'] = 2
+    init_state['score'] = 1
+
+    # wrong move
+    move = 'e1d1'
+    expected_board = board.fen()
+    board.push_uci(move)
+    wrong_board = board.fen()
+
+    payload = {
+        'state': init_state,
+        'action': {'move': move}
+    }
+    r = await client.post(f"/games/{game_id}/update",
+                          json=payload,
+                          headers={"Cookie": f"session_id={session_id}"})
+    assert r.status_code == 200
+    state = r.json()
+
+    assert state['fen'] == expected_board
+    assert state['fen'] != wrong_board
+    assert state['ply'] == 2
     assert state['score'] == 0
     assert state['gameover'] == False
+    assert state['wrong'] == True
+
 

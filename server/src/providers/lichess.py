@@ -6,12 +6,12 @@ import chess.pgn
 import io
 
 from ..services.error import error
-from ..config import LICHESS_SECRET
+from ..config import LICHESS_SECRET, b_TEST
 
 
-#API_URL = "https://lichess.org/api/puzzle/next"
-#API_URL = "https://lichess.org/api/puzzle/00sJ9"
+TEST_URL = "https://lichess.org/api/puzzle/00sJ9"
 API_URL = "https://lichess.org/api/puzzle/daily"
+#API_URL = "https://lichess.org/api/puzzle/next"
 
 
 # http_client is currently httpx.AsyncClient but can be swapped
@@ -27,11 +27,15 @@ async def fetch_daily_puzzle(http_client) -> dict:
         "difficulty": "normal",
         "color": ""   # 50% w or b
     }
-    r = await http_client.get(
-        API_URL,
-        #headers=headers,
-        #params=params
-    )
+
+    if b_TEST:
+        r = await http_client.get(TEST_URL)
+    else:
+        r = await http_client.get(
+            API_URL,
+            #headers=headers,
+            #params=params
+        )
 
     if r.status_code != 200:
         raise error(r.status_code, 'Failed to fetch daily chess puzzle')

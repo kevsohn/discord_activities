@@ -4,7 +4,7 @@ from pathlib import Path
 import json
 
 # test flag
-b_TEST = False
+b_TEST = True
 
 # adjustable constants
 GAME_RESET_HOUR = 0   # midnight UTC
